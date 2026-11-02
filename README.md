@@ -28,6 +28,16 @@ The website's repo holds the pages, the videos and the proof files; this repo ho
 - AM's guide plus one FLUX 3 Edit take landed the mouse 3 px from AM's spot at 1.29 s (1.33 s asked), with a median of 3.7 px from AM's path over all 97 frames.
 - Prompts alone took 6 tries at the plate leap and $0.87, and never landed it.
 
+**Core reasoner test: the drummers' beat. PASS.**
+- AM's core reasoner, given only the numbers its eyes measured, proved that five dancers in a Sora clip bounce on one shared rhythm: REPEAT with a period of 14 frames, in one phase. Nobody told it there is music.
+- Over the clip's last 55 frames it proved a period of 13: the tempo rose, and AM caught it. The pixels, without AM, agree both times.
+- The new frames were built from AM's own law, frame(t) = frame(t − 13), and locked before generation.
+- One Kling take kept the beat within the locked rule (5% slow), and AM's core, run on the generated video, found the beat again.
+
+**Ad test: 15 seconds from one photo. FAIL.**
+- From one product photo, AM wrote and locked all 450 frames of a 15-second camera move: an 8° arc around a notebook and a push-in to 85% of the frame height.
+- The one pass failed: ElevenLabs' Kling 4.0 Edit returned 4 seconds and ran the move about twice as fast as AM's clock.
+
 ## Why AM renders a guide video
 
 ```
@@ -318,6 +328,53 @@ Every Veo mouse given text stayed in its own depth plane: 9 to 16 cm deeper inst
 - The chef's hat floating in that take came from the guide's background, which still held the hat because Apple Vision's mask had missed its top. AM's puzzle of the take showed the hat 36.6 cm above the counter, resting on nothing.
 - A cleaner guide, with the whole mouse and hat moving, was blocked three times by FLUX's filter (not charged).
 
+## The beat test: AM's core reasoner extends a clip by its own law
+
+Clip: Sora 130, drummers dancing in a field (`maps/sora_130`). Code: `math3d/am_beat.py`. Files: `results/beat_test/` (`PROCESS.md` is the timed record).
+
+| Step | Measured | What came out |
+|---|---|---|
+| AM maps the whole clip | 131.2 s (AM's core 96.0 s), 0 tokens | dancers 1, 2, 4, 5, 6: up-and-down REPEAT, period 14, kept 51, 46, 50, 50, 44 of 55 |
+| The pixels, without AM | 0.9 s | the clip matches itself best shifted by 14 frames (frames 0–54) and by 13 (frames 55–149) |
+| AM maps the last 55 frames again | 101.1 s (AM's core 81.8 s) | dancers 1 and 5: REPEAT, period 13, kept 52 and 50 of 55 |
+| AM's law for the new frames | — | frame(t) = frame(t − 13): one bounce every 0.433 s, 138.5 beats a minute |
+| The lock | — | SHA-256 `b5ce4f66…6cfa`, before anything was generated |
+
+The guide is the clip's last frame, then AM's law, phase-locked to the clip. Its cycle joins itself by a cross-fade, and no step in it is larger than the clip's own largest frame change.
+
+**The take (Kling 4.0 Edit, one take, 5.04 s):**
+- **Pixels:** the best repeat is 14 frames, inside the locked 13 ± 1 rule, so it keeps AM's beat.
+- **Exact beat:** 0.456 s per bounce inside AM's plan, against AM's 0.433 s (5% slow).
+- **Control:** AM's guide sent through the same 24 fps conversion still measures 13 frames, so the slowdown is Kling's.
+- **AM's core on the take, on its own:** 4 of 6 dancers REPEAT with period 14, kept 132–136 of 151 frames (342.6 s, 0 tokens).
+
+```bash
+python3 math3d/am_beat.py build maps/sora_130 results/beat_test/map_last55 results/beat_test/rebuild
+```
+
+```bash
+python3 math3d/am_beat.py score results/beat_test results/beat_test/output_kling.mp4
+```
+
+## The ad test: 15 seconds from one photo, locked, one pass
+
+Photo: a Vazram notebook on a desk (`results/ad_test/photo_original.jpg`; mapped as a 1-second still in `maps/vazram`). Code: `math3d/am_ad.py`. Files: `results/ad_test/` (`PROCESS.md` is the locked record).
+
+- **The scene in 3D.** AM's eyes and puzzle find the notebook (P1) and the desk (fitted to 0.87 cm). Metric depth places every pixel. On a product photo the stated 60° lens makes AM's centimetres wrong in scale, so the shot uses only angles and fractions.
+- **The intent and its equation.** The camera holds for 1.5 s, then arcs 8° to the left around the notebook's centre over 12 s with e = 3s² − 2s³. Its distance falls to 0.896 of the start, solved so the notebook fills 85% of the frame height, centred.
+- **The lock.** All 450 rows (camera, notebook centre and box, six background patches) were sealed with SHA-256 `8b9b0913…2e66` before the guide was drawn from them.
+- **The rule:** the notebook within 8 px of AM's guide at every frame, and the background within 8 px on 90% of frames.
+
+**The take: FAIL.**
+- Kling 4.0 Edit returned 4.04 s, not 15.
+- The notebook was a median 6.9 px from the guide, worst 15.9 px; the background a median 20.2 px.
+- Measured afterwards: Kling's 4 s reached AM's 7.3 s, so it ran about twice as fast. Even at its best-matching guide moment the background was 17 px off, so Kling made its own camera move.
+- The plan has to be locked for the length the model actually returns.
+
+```bash
+python3 math3d/am_ad.py score results/ad_test results/ad_test/output_kling.mp4
+```
+
 ## Cost and price
 
 Machine time is priced at about $0.03 an hour: an owned Mac, its price spread over three years, plus power. Credits are priced at $6 per 30,000 ($0.0002 each). Kling credits use its listed rate of 1,730 a second.
@@ -417,6 +474,20 @@ On every map built so far, AM's value at every frame reproduces its proof exactl
 | FLUX repaint take (plate_G) | 97 at 24 fps | 11 of 18 | up/down and depth ruled | 62.9 s | about $0.0005 |
 | Sora cats chess (`maps/sora_206`) | 150 at 30 fps | 8 of 36 | CANNOT on all three | 149.5 s | about $0.0012 |
 
+### The shot: your intent, AM's numbers, the take
+
+Below the puzzle, **The shot** turns an intent into a locked plan and measures the take (`math3d/am_shot.py`):
+1. Pick the piece that moves and say what it is. Click where it goes (the lens ray meets the surface), or pick a piece to land on.
+2. Choose a slide (e = 3s² − 2s³) or a jump (a gravity arc), the start time and the length.
+3. **Work out the shot.** AM answers SOLVED, with the plan locked by SHA-256, a 720p guide video and a prompt. Or it answers CANNOT, with the reason: it leaves the frame, it runs into another piece, or a slide would have to climb.
+4. Run the guide through a video model and **upload the take**. The same Apple Vision tracker reads the piece on the guide and on the take, so its bias cancels, and six background patches show how far the camera moved.
+5. You get PASS or FAIL (within 5 px of AM at every frame of the plan and at the end), a chart for every frame, and the take with AM's box drawn on it.
+
+Checked on real takes:
+- The Kling chess slide scores **PASS**: median 0.9 px, worst 3.4 px.
+- The orange-cat take scores **FAIL**: worst 19 px while the paw lifts the pawn.
+- A piece that something covers can pull the tracker off it.
+
 Predicting the clip's next frames without an intent was tried and dropped. Over 2,790 number-frames hidden from AM:
 - continuing the anchor was right 1,308 times and wrong 686;
 - simply holding the last value was right 1,903 times.
@@ -431,6 +502,9 @@ That is not the job anyway: the intent sets the question, and the puzzle is what
 | `math3d/am3d.py` | measure, lift, shared memory, spine and sweep, proof |
 | `math3d/am_dict.py` | rules written down as formulas and evaluated |
 | `math3d/am_map.py` | builds a map: eyes, 3D solve, room points, AM's values for every rule |
+| `math3d/am_shot.py` | the shot: an intent locked as numbers, a 720p guide, a prompt; the take measured against the lock |
+| `math3d/am_beat.py` | the beat test: AM's core reasoner's REPEAT law extends a clip; the take's beat measured twice |
+| `math3d/am_ad.py` | the ad test: a camera move around a product in one photo, every frame locked; the take measured |
 | `math3d/am_puzzle.py`, `math3d/instances.swift` | AM's geometric puzzle of a frame: stage, camera, pieces, relations |
 | `math3d/am_grid.py` | the board: colours, grid size, corners, pose through the lens |
 | `math3d/am_intent.py` | an intent solved on the puzzle: the gravity arc, the clean background, the render |
@@ -440,10 +514,12 @@ That is not the job anyway: the intent sets the question, and the puzzle is what
 | `math3d/am_extend.py` | prediction without an intent: the record of why it was dropped |
 | `math3d/track_from.swift`, `subject_mask.swift` | Apple Vision helpers |
 | `map_app.py`, `ui/map.html`, `ui/vendor/three.min.js` | the AM Map app (three.js r128, MIT, kept here so it works offline) |
-| `maps/sample`, `maps/sora_206` | AM's maps of the Sora mouse and the Sora chess clip |
+| `maps/sample`, `maps/sora_206`, `maps/sora_130`, `maps/vazram` | AM's maps: the Sora mouse, the chess clip, the drummers, the notebook photo |
 | `samples/` | the Sora clip (Rapidata, Apache-2.0), the mask and the background |
 | `results/chess_test/` | the final test: start frame, the three locks and hashes, guides, every take, prompts, scores, the pawn's mask |
 | `results/chess_test/tools/` | the code that made and checks each chess proof |
+| `results/beat_test/` | the beat test: the law, the lock, the guide, AM's process video, the take and its score |
+| `results/ad_test/` | the ad test: the photo, depth, the 450-row lock, the guide, the take and its score |
 | `results/data/`, `results/media/`, `results/ask_am/` | the mouse test: plans, scores, takes, last frames, labelled videos |
 | `site/` | the website's source; the public copy is the `am-exact-video` repo |
 

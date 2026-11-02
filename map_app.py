@@ -14,7 +14,79 @@ UI = os.path.join(HERE, "ui", "map.html")
 JOBS = {}
 WORK = threading.Lock()                                        # one map at a time: depth model and AM's eyes use memory
 TYPES = {".json": "application/json", ".mp4": "video/mp4", ".html": "text/html; charset=utf-8", ".png": "image/png",
-         ".js": "application/javascript"}
+         ".js": "application/javascript", ".txt": "text/plain; charset=utf-8", ".sha256": "text/plain; charset=utf-8"}
+SHOT_FILES = r"plan\.json|plan\.sha256|guide\.mp4|guide_end\.png|prompt\.txt|shot\.json|take\.mp4|score\.json|labelled\.mp4"
+
+
+def run_shot(jid, mid, q):
+    def progress(stage):
+        JOBS[jid]["stage"] = stage
+    try:
+        with WORK:
+            import am_shot
+            am_shot.plan(os.path.join(MAPS, mid), q, progress=progress)
+        JOBS[jid]["done"] = True
+    except Exception as e:
+        JOBS[jid]["error"] = "%s: %s" % (type(e).__name__, e)
+
+
+def run_score(jid, mid, sid):
+    def progress(stage):
+        JOBS[jid]["stage"] = stage
+    try:
+        with WORK:
+            import am_shot
+            d = os.path.join(MAPS, mid, "shots", sid)
+            am_shot.score(os.path.join(MAPS, mid), sid, os.path.join(d, "take.mp4"), progress=progress)
+        JOBS[jid]["done"] = True
+    except Exception as e:
+        JOBS[jid]["error"] = "%s: %s" % (type(e).__name__, e)
+
+
+def shot_question(mid, body):
+    """the intent from the page, checked before AM works on it"""
+    q = json.loads(body or b"{}")
+    pz = json.load(open(os.path.join(MAPS, mid, "puzzle.json")))
+    ids = {p["id"] for p in pz["pieces"]}
+    out = dict(mover=int(q["mover"]), mode=q.get("mode", "slide"), start=float(q.get("start", 0.5)),
+               length=float(q.get("length", 3.2)), name=str(q.get("name", ""))[:80], fill=q.get("fill", "smooth"))
+    if out["mover"] not in ids or out["mode"] not in ("slide", "jump") or out["fill"] not in ("smooth", "stage", "nearest"):
+        raise ValueError("unknown piece, motion or fill")
+    if not (0 <= out["start"] <= 20 and 1 <= out["length"] <= 20):
+        raise ValueError("the start or the length is out of range")
+    if out["mode"] == "slide":
+        out["duration"] = float(q.get("duration", 1.0))
+        if not 0.1 <= out["duration"] <= 10:
+            raise ValueError("the slide's time is out of range")
+    else:
+        out["height"] = float(q.get("height", 14))
+        if not 0.5 <= out["height"] <= 300:
+            raise ValueError("the arc's height is out of range")
+    if q.get("onto") not in (None, ""):
+        out["onto"] = int(q["onto"])
+        if out["onto"] not in ids or out["onto"] == out["mover"]:
+            raise ValueError("the target piece is not on the puzzle")
+    else:
+        out["across"], out["forward"] = round(float(q["across"]), 1), round(float(q["forward"]), 1)
+    return out
+
+
+def shots_of(mid):
+    d = os.path.join(MAPS, mid, "shots")
+    out = []
+    for sid in os.listdir(d) if os.path.isdir(d) else []:
+        p = os.path.join(d, sid, "shot.json")
+        if not os.path.exists(p):
+            continue
+        s = json.load(open(p))
+        sp = os.path.join(d, sid, "score.json")
+        if os.path.exists(sp):
+            sc = json.load(open(sp))
+            s["score"] = {k: sc[k] for k in ("verdict", "why", "median_px", "worst_px", "worst_t", "end_px", "measured",
+                                             "in_plan", "lost", "camera_drift_max_px", "lock_ok", "take", "seconds")}
+        s["mtime"] = os.path.getmtime(p)
+        out.append(s)
+    return sorted(out, key=lambda s: -s["mtime"])
 
 
 def run_job(jid, path, kind, seconds=2.0):
@@ -95,10 +167,52 @@ class H(BaseHTTPRequestHandler):
         m = re.fullmatch(r"/maps/([A-Za-z0-9_-]+)/(map\.json|puzzle\.json|puzzle_frame\.png|puzzle_labels\.png|clip\.mp4)", u.path)
         if m and os.path.exists(os.path.join(MAPS, m.group(1), m.group(2))):
             return self._file(os.path.join(MAPS, m.group(1), m.group(2)))
+        m = re.fullmatch(r"/api/shots/([A-Za-z0-9_-]+)", u.path)
+        if m:
+            return self._json(shots_of(m.group(1)))
+        m = re.fullmatch(r"/maps/([A-Za-z0-9_-]+)/shots/([0-9a-f]{10})/(%s)" % SHOT_FILES, u.path)
+        if m and os.path.exists(os.path.join(MAPS, m.group(1), "shots", m.group(2), m.group(3))):
+            return self._file(os.path.join(MAPS, m.group(1), "shots", m.group(2), m.group(3)))
         self._send(404, b"not found", "text/plain")
 
     def do_POST(self):
         u = urlparse(self.path)
+        m = re.fullmatch(r"/api/shot/([A-Za-z0-9_-]+)", u.path)
+        if m:                                                  # an intent on the puzzle: AM's numbers, the lock, the guide
+            mid = m.group(1)
+            if not os.path.exists(os.path.join(MAPS, mid, "puzzle.json")):
+                return self._json(dict(error="this map has no puzzle yet"), 404)
+            try:
+                q = shot_question(mid, self.rfile.read(int(self.headers.get("Content-Length", "0"))))
+            except (ValueError, KeyError, TypeError) as e:
+                return self._json(dict(error="The shot could not be read: %s" % e), 400)
+            import am_shot
+            sid = am_shot.shot_id(os.path.join(MAPS, mid), q)
+            jid = "shot-%s-%s" % (mid, sid)
+            if os.path.exists(os.path.join(MAPS, mid, "shots", sid, "shot.json")):
+                JOBS[jid] = dict(stage="done", done=True)
+            elif jid not in JOBS or JOBS[jid].get("error"):
+                JOBS[jid] = dict(stage="queued")
+                threading.Thread(target=run_shot, args=(jid, mid, q), daemon=True).start()
+            return self._json(dict(id=jid, shot=sid))
+        m = re.fullmatch(r"/api/take/([A-Za-z0-9_-]+)/([0-9a-f]{10})", u.path)
+        if m:                                                  # the take a video model painted: measured against the lock
+            mid, sid = m.group(1), m.group(2)
+            d = os.path.join(MAPS, mid, "shots", sid)
+            if not os.path.exists(os.path.join(d, "guide.mp4")):
+                return self._json(dict(error="no guide for this shot"), 404)
+            body = self.rfile.read(int(self.headers.get("Content-Length", "0")))
+            if not body:
+                return self._json(dict(error="no video received"), 400)
+            with open(os.path.join(d, "take.mp4"), "wb") as f:
+                f.write(body)
+            for old in ("score.json", "labelled.mp4"):
+                if os.path.exists(os.path.join(d, old)):
+                    os.remove(os.path.join(d, old))
+            jid = "take-%s-%s-%s" % (mid, sid, hashlib.sha1(body).hexdigest()[:8])
+            JOBS[jid] = dict(stage="queued")
+            threading.Thread(target=run_score, args=(jid, mid, sid), daemon=True).start()
+            return self._json(dict(id=jid, shot=sid))
         m = re.fullmatch(r"/api/puzzle/([A-Za-z0-9_-]+)", u.path)
         if m:                                                  # AM's puzzle of one frame of a map already built
             mid = m.group(1)

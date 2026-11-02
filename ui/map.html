@@ -91,6 +91,40 @@ button:focus-visible, select:focus-visible, label.btn:focus-within, canvas:focus
 .pz-rel { margin: 0; font-size: 13px; color: var(--muted); }
 .warn { color: var(--bad); font-weight: 600; }
 @media (max-width: 1060px) { .pz-views { grid-template-columns: minmax(0, 1fr); } }
+
+.shot { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 14px 16px; display: grid; gap: 12px; }
+.sh-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+#sh2d { cursor: crosshair; }
+.sh-form { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.sh-form > label, .sh-row label { display: grid; gap: 4px; font-size: 12.5px; color: var(--muted); }
+.sh-form input[type=text], .sh-form input[type=number], .sh-form select { font: 14px var(--font-ui); color: var(--ink); background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 7px 10px; width: 100%; max-width: none; }
+.sh-form fieldset { border: 1px solid var(--rule); border-radius: 10px; padding: 8px 10px 10px; margin: 0; display: grid; gap: 8px; min-width: 0; }
+.sh-form legend { font-size: 12.5px; color: var(--muted); padding: 0 4px; }
+.sh-form .toggle { color: var(--ink); font-size: 13px; flex-wrap: wrap; }
+.sh-form .toggle select { width: auto; padding: 4px 8px; font-size: 13px; }
+.sh-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.sh-target { margin: 0; font-size: 12.5px; background: var(--ground); border-radius: 8px; padding: 8px 10px; }
+.sh-out { display: grid; gap: 12px; }
+.sh-verdict { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; font-size: 13px; }
+.pill { font: 600 12px var(--font-data); letter-spacing: 0.03em; border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
+.pill.ok { background: var(--accent-soft); color: var(--accent); }
+.pill.bad { background: var(--bad-soft); color: var(--bad); }
+.pill.cannot { background: var(--cannot-soft); color: var(--cannot); }
+.sh-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+.sh-box { border: 1px solid var(--rule); border-radius: 10px; padding: 10px 12px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.sh-box h3 { margin: 0; font-size: 14px; }
+.sh-box video { width: 100%; display: block; background: #000; border-radius: 8px; }
+.sh-box ol { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; font-size: 13px; }
+.sh-box textarea { width: 100%; min-height: 150px; font: 13px/1.5 var(--font-ui); color: var(--ink); background: var(--ground); border: 1px solid var(--rule); border-radius: 8px; padding: 8px 10px; resize: vertical; }
+.sh-links { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.sh-links a { font-weight: 500; color: var(--accent); }
+.lock { margin: 0; font: 11.5px var(--font-data); overflow-wrap: anywhere; color: var(--muted); }
+.sh-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.sh-stat { border: 1px solid var(--rule); border-radius: 10px; padding: 8px 10px; display: grid; gap: 2px; min-width: 0; }
+.sh-stat b { font-size: 11.5px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.sh-stat span { font: 600 17px var(--font-data); font-variant-numeric: tabular-nums; }
+#shChart { width: 100%; height: 190px; display: block; cursor: crosshair; }
+@media (max-width: 1060px) { .sh-grid, .sh-two { grid-template-columns: minmax(0, 1fr); } .sh-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .core { display: grid; gap: 12px; }
 .core-head p { margin: 4px 0 0; color: var(--muted); max-width: 92ch; }
 .table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; }
@@ -198,6 +232,37 @@ td.now { min-width: 17ch; }
       <tbody id="pzPieces"></tbody>
     </table></div>
     <p class="pz-rel" id="pzRel"></p>
+  </section>
+
+  <section class="shot" aria-labelledby="shTitle">
+    <div class="pz-head">
+      <div>
+        <h2 id="shTitle">The shot</h2>
+        <p>Ask for a move on AM's puzzle. AM works out the piece's place and size at every frame, locks those numbers with SHA-256 before anything is generated, and draws them as a guide video. Run the guide through a video model yourself, then upload the take: every frame is measured against the lock.</p>
+      </div>
+    </div>
+    <div class="sh-grid">
+      <div class="panel"><div class="panel-head">Where it goes <span>click the frame</span></div><div class="stage" id="shStage"><canvas id="sh2d" aria-label="The last frame: the piece that moves and where it goes"></canvas></div></div>
+      <form class="sh-form" id="shForm">
+        <label>Piece that moves<select id="shMover"></select></label>
+        <label>What it is, for the prompt<input id="shName" type="text" maxlength="80" placeholder="for example: the dark pawn"></label>
+        <fieldset>
+          <legend>Where it goes</legend>
+          <label class="toggle"><input type="radio" name="shTo" value="spot" checked> A spot on the surface: click the frame</label>
+          <label class="toggle"><input type="radio" name="shTo" value="onto"> On top of a piece <select id="shOnto" aria-label="Piece to land on"></select></label>
+        </fieldset>
+        <label>How it moves<select id="shMode"><option value="slide">Slides along the surface</option><option value="jump">Jumps in an arc, under gravity</option></select></label>
+        <div class="sh-row">
+          <label>Starts at (s)<input id="shStart" type="number" min="0" max="20" step="0.1" value="0.5"></label>
+          <label id="shDurL">Moves for (s)<input id="shDur" type="number" min="0.1" max="10" step="0.1" value="1.0"></label>
+          <label id="shHL" hidden>Arc height (cm)<input id="shH" type="number" min="1" max="300" step="1" value="14"></label>
+          <label>Shot length (s)<input id="shLen" type="number" min="1" max="20" step="0.1" value="3.2"></label>
+        </div>
+        <p class="sh-target mono" id="shTarget">Loading the puzzle…</p>
+        <button class="primary" type="submit" id="shGo">Work out the shot</button>
+      </form>
+    </div>
+    <div class="sh-out" id="shOut" hidden></div>
   </section>
 
   <section class="core">
@@ -871,7 +936,7 @@ td.now { min-width: 17ch; }
     $('pzStage').style.aspectRatio = PZ.size[0] + ' / ' + PZ.size[1];
     const sub = PZ.pieces.find(p => p.kind === 'subject');
     pzSel = sub ? sub.id : (PZ.pieces[0] || {}).id || null;
-    renderPuzzle(); buildPz3();
+    renderPuzzle(); buildPz3(); shInit(id);
   }
   function renderPuzzle() {
     if (!PZ) return;
@@ -1003,6 +1068,233 @@ td.now { min-width: 17ch; }
     pzDirty = true;
   }
 
+  // ---------- the shot: an intent asked on the puzzle, AM's numbers locked, the guide, and the take measured against the lock
+  let SH = { target: null, shot: null, plan: null, score: null, tint: null, tintFor: -1 };
+  const shTo = () => document.querySelector('input[name=shTo]:checked').value;
+  const dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const shPiece = id => PZ && PZ.pieces.find(p => p.id === id);
+  function toStage(x, y) {                                     // the lens ray through a pixel meets the stage, n.p + offset = 0
+    const L = PZ.lens, S = PZ.stage, d = [(x - L.cx) / L.f, (y - L.cy) / L.f, 1], nd = dot3(S.normal, d);
+    if (Math.abs(nd) < 1e-9 || -S.offset / nd <= 0) return null;
+    const t = -S.offset / nd, O = S.axes.origin, q = [d[0] * t - O[0], d[1] * t - O[1], d[2] * t - O[2]];
+    return { across: dot3(q, S.axes.across), forward: dot3(q, S.axes.forward) };
+  }
+  function toPixel(a, b, u) {                                  // a stage point back through the lens
+    const L = PZ.lens, S = PZ.stage, p = [0, 1, 2].map(i => S.axes.origin[i] + a * S.axes.across[i] + b * S.axes.forward[i] + u * S.normal[i]);
+    return [L.cx + L.f * p[0] / p[2], L.cy + L.f * p[1] / p[2]];
+  }
+  function shInit(id) {
+    SH = { target: null, shot: null, plan: null, score: null, tint: null, tintFor: -1 };
+    const opts = PZ.pieces.map(p => '<option value="' + p.id + '">P' + p.id + ' · ' + p.kind + ', ' + p.size.up + ' cm tall, ' + p.distance_cm.toFixed(0) + ' cm away</option>').join('');
+    $('shMover').innerHTML = opts; $('shOnto').innerHTML = opts;
+    if (pzSel) $('shMover').value = String(pzSel);
+    shOntoDefault();
+    $('shStage').style.aspectRatio = PZ.size[0] + ' / ' + PZ.size[1];
+    $('shOut').hidden = true; $('shOut').innerHTML = '';
+    shModeUI(); shTargetText(); shDraw();
+    getJSON('/api/shots/' + encodeURIComponent(id)).then(list => { if (mapId === id && list.length) loadShot(list[0].id, true); }).catch(() => {});
+  }
+  function shOntoDefault() {
+    const m = +$('shMover').value;
+    if (+$('shOnto').value === m) { const o = PZ.pieces.find(p => p.id !== m); if (o) $('shOnto').value = String(o.id); }
+  }
+  function shModeUI() { const j = $('shMode').value === 'jump'; $('shHL').hidden = !j; $('shDurL').hidden = j; }
+  function shTargetText() {
+    const P = shPiece(+$('shMover').value);
+    if (!P) { $('shTarget').textContent = 'This puzzle has no pieces to move.'; return; }
+    let t;
+    if (shTo() === 'onto') {
+      const Q = shPiece(+$('shOnto').value);
+      t = !Q ? 'Pick a piece to land on.' : 'Onto P' + Q.id + ': its top is ' + Q.top + ' cm above the stage' + (Q.top > P.stands.up + 2 && $('shMode').value === 'slide' ? '; that is higher than P' + P.id + ', so a slide cannot climb it: make it a jump.' : '.');
+    } else if (!SH.target) t = 'Click the frame to choose where P' + P.id + ' goes.';
+    else {
+      const da = SH.target.across - P.stands.across, db = SH.target.forward - P.stands.forward;
+      t = 'To: across ' + SH.target.across.toFixed(1) + ' cm, forward ' + SH.target.forward.toFixed(1) + ' cm, ' + Math.hypot(da, db).toFixed(1) + ' cm from where P' + P.id + ' stands.';
+    }
+    $('shTarget').textContent = t;
+  }
+  function shDraw() {
+    const cv = $('sh2d'), W = cv.clientWidth, H = cv.clientHeight, d = devicePixelRatio;
+    if (!PZ || !pzFrame || !pzIds || !W || !H) return;
+    if (cv.width !== Math.round(W * d) || cv.height !== Math.round(H * d)) { cv.width = Math.round(W * d); cv.height = Math.round(H * d); }
+    const g = cv.getContext('2d'); g.setTransform(d, 0, 0, d, 0, 0);
+    g.drawImage(pzFrame, 0, 0, W, H);
+    const sx = W / PZ.size[0], sy = H / PZ.size[1], mover = +$('shMover').value, P = shPiece(mover);
+    if (!P) return;
+    if (SH.tintFor !== mover) {                                // the piece that moves, tinted
+      const [w, h] = PZ.size, oc = document.createElement('canvas'); oc.width = w; oc.height = h;
+      const og = oc.getContext('2d'), im = og.createImageData(w, h), c = hexRgb('#46e28a');
+      for (let i = 0; i < pzIds.length; i++) if (pzIds[i] === mover) { im.data[4 * i] = c[0]; im.data[4 * i + 1] = c[1]; im.data[4 * i + 2] = c[2]; im.data[4 * i + 3] = 115; }
+      og.putImageData(im, 0, 0); SH.tint = oc; SH.tintFor = mover;
+    }
+    g.drawImage(SH.tint, 0, 0, W, H);
+    const from = toPixel(P.stands.across, P.stands.forward, P.stands.up);
+    let to = null;
+    if (shTo() === 'onto') {
+      const Q = shPiece(+$('shOnto').value);
+      if (Q) { const [x, y, w, h] = Q.box; g.strokeStyle = '#ffc400'; g.lineWidth = 2; g.setLineDash([5, 4]); g.strokeRect(x * sx, y * sy, w * sx, h * sy); g.setLineDash([]); to = toPixel(Q.stands.across, Q.stands.forward, Q.top); }
+    } else if (SH.target) to = toPixel(SH.target.across, SH.target.forward, P.stands.up);
+    const plan = SH.plan && SH.plan.question.mover === mover ? SH.plan : null;
+    if (plan) {                                                // AM's locked path: the foot at every frame, and its box at the end
+      g.strokeStyle = '#46e28a'; g.lineWidth = 2.5; g.beginPath();
+      plan.rows.forEach((r, i) => { const x = r.foot[0] * sx, y = r.foot[1] * sy; if (i) g.lineTo(x, y); else g.moveTo(x, y); });
+      g.stroke();
+      const r0 = plan.rows[0], r = plan.rows[plan.rows.length - 1], [bx, by, bw, bh] = plan.mover_box, s = r.h / r0.h;
+      g.strokeRect((r.foot[0] + (bx - r0.foot[0]) * s) * sx, (r.foot[1] + (by - r0.foot[1]) * s) * sy, bw * s * sx, bh * s * sy);
+    } else if (to) {
+      g.strokeStyle = '#ffc400'; g.lineWidth = 2; g.setLineDash([6, 5]); g.beginPath();
+      g.moveTo(from[0] * sx, from[1] * sy); g.lineTo(to[0] * sx, to[1] * sy); g.stroke(); g.setLineDash([]);
+    }
+    if (to) { g.fillStyle = '#ffc400'; g.beginPath(); g.arc(to[0] * sx, to[1] * sy, 6, 0, 2 * Math.PI); g.fill(); g.strokeStyle = '#000'; g.lineWidth = 1.5; g.stroke(); }
+    g.fillStyle = '#fff'; g.beginPath(); g.arc(from[0] * sx, from[1] * sy, 4, 0, 2 * Math.PI); g.fill();
+  }
+  $('sh2d').addEventListener('click', e => {
+    if (!PZ || !pzIds) return;
+    const rc = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rc.left) * PZ.size[0] / rc.width, y = (e.clientY - rc.top) * PZ.size[1] / rc.height;
+    if (shTo() === 'onto') {
+      const id = pzIds[Math.floor(y) * PZ.size[0] + Math.floor(x)];
+      if (id && id !== +$('shMover').value) $('shOnto').value = String(id);
+    } else {
+      const st = toStage(x, y);
+      if (!st) { $('shTarget').textContent = 'That point is above the surface: click a point on the surface.'; return; }
+      SH.target = st;
+    }
+    SH.plan = null; shTargetText(); shDraw();
+  });
+  $('shMode').addEventListener('change', () => { shModeUI(); shTargetText(); });
+  $('shMover').addEventListener('change', () => { shOntoDefault(); SH.plan = null; shTargetText(); shDraw(); });
+  $('shOnto').addEventListener('change', () => { SH.plan = null; shTargetText(); shDraw(); });
+  document.querySelectorAll('input[name=shTo]').forEach(r => r.addEventListener('change', () => { SH.plan = null; shTargetText(); shDraw(); }));
+  new ResizeObserver(() => shDraw()).observe($('sh2d'));
+  addEventListener('resize', () => shChart());
+  function shFormFrom(q) {
+    $('shMover').value = String(q.mover); $('shName').value = q.name || ''; $('shMode').value = q.mode;
+    $('shStart').value = q.start; $('shLen').value = q.length;
+    if (q.duration !== undefined) $('shDur').value = q.duration;
+    if (q.height !== undefined) $('shH').value = q.height;
+    const onto = q.onto !== undefined && q.onto !== null;
+    document.querySelector('input[name=shTo][value=' + (onto ? 'onto' : 'spot') + ']').checked = true;
+    if (onto) $('shOnto').value = String(q.onto); else SH.target = { across: q.across, forward: q.forward };
+    shModeUI(); shTargetText();
+  }
+  $('shForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!PZ || !mapId) return;
+    const q = { mover: +$('shMover').value, name: $('shName').value.trim(), mode: $('shMode').value, start: +$('shStart').value, length: +$('shLen').value };
+    if (q.mode === 'slide') q.duration = +$('shDur').value; else q.height = +$('shH').value;
+    if (shTo() === 'onto') q.onto = +$('shOnto').value;
+    else if (SH.target) { q.across = +SH.target.across.toFixed(1); q.forward = +SH.target.forward.toFixed(1); }
+    else { $('shTarget').textContent = 'Click the frame first to choose where it goes.'; return; }
+    $('shGo').disabled = true;
+    const id = mapId;
+    try {
+      const j = await (await fetch('/api/shot/' + encodeURIComponent(id), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(q) })).json();
+      if (j.error) throw new Error(j.error);
+      poll(j.id, async () => { $('shGo').disabled = false; if (mapId === id) { await loadShot(j.shot); status(''); } }, 'shot');
+    } catch (err) { $('shGo').disabled = false; status(err.message); }
+  });
+  async function loadShot(sid, restoring) {
+    const base = '/maps/' + encodeURIComponent(mapId) + '/shots/' + sid + '/';
+    let s;
+    try { s = await getJSON(base + 'shot.json'); } catch (e) { return; }
+    SH.shot = s; SH.plan = null; SH.score = null;
+    if (restoring) shFormFrom(s.question);
+    if (s.verdict === 'SOLVED') { try { SH.plan = await getJSON(base + 'plan.json'); } catch (e) { SH.plan = null; } }
+    try { SH.score = await getJSON(base + 'score.json'); } catch (e) { SH.score = null; }
+    shRender(base); shDraw();
+  }
+  function shRender(base) {
+    const s = SH.shot, out = $('shOut'), ok = s.verdict === 'SOLVED', c = s.checks;
+    const t0 = (s.take_off / s.fps).toFixed(2), t1 = ((s.take_off + s.moving_frames) / s.fps).toFixed(2);
+    let h = '<div class="sh-verdict"><span class="pill ' + (ok ? 'ok' : 'cannot') + '">' + (ok ? 'SOLVED' : 'CANNOT') + '</span><span class="mono">' +
+      s.frames + ' frames at ' + s.fps + ' fps · moves ' + t0 + '–' + t1 + ' s · ' + (c.in_frame ? 'stays in frame' : 'leaves the frame') + ' · ' +
+      (c.clears ? 'clears every piece' : 'runs into a piece') + ' · ends on ' + esc(c.lands_on) + ' · worked out in ' + s.solve_seconds + ' s, 0 tokens</span></div>';
+    if (!ok) h += '<p class="warn">AM cannot: ' + s.why.map(esc).join(' · ') + '.</p>';
+    else {
+      const v = '?v=' + s.sha256.slice(0, 8);
+      h += '<div class="sh-two"><div class="sh-box"><h3>AM\'s guide: its numbers, drawn</h3><video src="' + base + 'guide.mp4' + v + '" controls muted loop playsinline preload="metadata"></video>' +
+        '<div class="sh-links"><a href="' + base + 'guide.mp4" download="am_guide_' + s.id + '.mp4">Download the guide video</a><a href="' + base + 'plan.json" download="am_plan_' + s.id + '.json">Download the locked plan</a></div>' +
+        '<p class="lock">Locked before generation · SHA-256 ' + s.sha256 + '</p><p class="formula mono">' + esc(s.equation) + '</p></div>' +
+        '<div class="sh-box"><h3>Run it through a video model</h3><ol><li>Download the guide video.</li><li>In ElevenLabs Image &amp; Video, choose <b>Kling 4.0 Edit</b> (or FLUX 3 Edit) and drop the guide into Video. Kling needs at least 3 s.</li><li>Paste this prompt and generate one take.</li><li>Download the take and upload it here.</li></ol>' +
+        '<textarea id="shPrompt" readonly aria-label="Prompt for the video model">' + esc(s.prompt || '') + '</textarea>' +
+        '<div class="sh-links"><button type="button" id="shCopy">Copy the prompt</button><label class="btn" for="shTake">Upload the take<input id="shTake" type="file" accept="video/mp4,video/quicktime" hidden></label></div></div></div>' +
+        '<div id="shScore"></div>';
+    }
+    out.innerHTML = h; out.hidden = false;
+    if (!ok) return;
+    $('shCopy').addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText($('shPrompt').value); $('shCopy').textContent = 'Copied'; } catch (e) { $('shPrompt').select(); }
+      setTimeout(() => { if ($('shCopy')) $('shCopy').textContent = 'Copy the prompt'; }, 1600);
+    });
+    $('shTake').addEventListener('change', e => { if (e.target.files[0]) shUpload(e.target.files[0]); e.target.value = ''; });
+    if (SH.score) shScore(base);
+  }
+  async function shUpload(file) {
+    const s = SH.shot, id = mapId;
+    status('Sending the take to AM on this Mac…');
+    try {
+      const j = await (await fetch('/api/take/' + encodeURIComponent(id) + '/' + s.id, { method: 'POST', headers: { 'Content-Type': 'video/mp4' }, body: file })).json();
+      if (j.error) throw new Error(j.error);
+      $('shScore').innerHTML = '<p class="muted">Measuring the take frame by frame…</p>';
+      poll(j.id, async () => { if (mapId === id && SH.shot && SH.shot.id === s.id) { await loadShot(s.id); status('The take is measured.'); } }, 'take');
+    } catch (e) { status('The take could not be measured: ' + e.message); }
+  }
+  function shScore(base) {
+    const r = SH.score, cls = r.verdict === 'PASS' ? 'ok' : r.verdict === 'FAIL' ? 'bad' : 'cannot';
+    const px = v => v === null || v === undefined ? '—' : v.toFixed(1) + ' px';
+    const stats = [['Median', px(r.median_px)], ['Worst', px(r.worst_px) + (r.worst_t !== null && r.worst_t !== undefined ? ' at ' + r.worst_t.toFixed(2) + ' s' : '')],
+      ['At the end', px(r.end_px)], ['Background shift', px(r.camera_drift_max_px)]];
+    $('shScore').innerHTML = '<div class="sh-verdict"><span class="pill ' + cls + '">' + esc(r.verdict) + '</span><span>' + esc(r.why) + '</span></div>' +
+      '<div class="sh-stats">' + stats.map(([a, b]) => '<div class="sh-stat"><b>' + a + '</b><span>' + b + '</span></div>').join('') + '</div>' +
+      '<p class="muted">Rule fixed before generation: ' + esc(r.rule) + '. Measured ' + r.measured + ' of ' + r.in_plan + ' frames of AM\'s plan; the take is ' + r.take.seconds + ' s at ' + r.take.fps + ' fps. The lock ' +
+      (r.lock_ok ? 'held: the plan still matches its SHA-256' : 'did not hold') + '. Measured in ' + r.seconds + ' s, 0 tokens.</p>' +
+      '<canvas id="shChart" aria-label="Distance from AM\'s guide at every frame of the take"></canvas>' +
+      '<div class="sh-box"><h3>The take, with AM\'s numbers drawn on it</h3><video src="' + base + 'labelled.mp4?v=' + r.seconds + '" controls muted loop playsinline preload="metadata"></video></div>';
+    shChart();
+    $('shChart').addEventListener('mousemove', e => {
+      const f = shChartAt(e); const tip = $('tip');
+      if (!f) { tip.hidden = true; return; }
+      tip.textContent = 't ' + f.t.toFixed(2) + ' s · ' + (f.off === null ? 'tracker lost the piece' : f.off.toFixed(1) + ' px from AM\'s guide') + (f.in_plan ? '' : ' · after AM\'s plan');
+      tip.hidden = false; tip.style.left = (e.clientX + 12) + 'px'; tip.style.top = (e.clientY + 12) + 'px';
+    });
+    $('shChart').addEventListener('mouseleave', () => { $('tip').hidden = true; });
+  }
+  let shGeom = null;
+  function shChart() {
+    const cv = $('shChart');
+    if (!cv || !SH.score) return;
+    const W = cv.clientWidth, H = cv.clientHeight, d = devicePixelRatio, r = SH.score;
+    if (!W || !H) return;
+    cv.width = Math.round(W * d); cv.height = Math.round(H * d);
+    const g = cv.getContext('2d'); g.setTransform(d, 0, 0, d, 0, 0);
+    const F = r.frames, T = Math.max(r.take.seconds, 0.1), vals = F.map(f => f.off).filter(v => v !== null);
+    const ymax = Math.max(10, ...vals) * 1.1, L = 46, R = 12, Tp = 10, B = 24, pw = W - L - R, ph = H - Tp - B;
+    const X = t => L + pw * t / T, Y = v => Tp + ph * (1 - v / ymax);
+    shGeom = { X, L, pw, T };
+    const pe = X(Math.min(T, r.plan_seconds));
+    g.fillStyle = TOK['--zone-ext']; g.fillRect(pe, Tp, L + pw - pe, ph);
+    g.font = '11px ' + TOK['--font-data']; g.lineWidth = 1;
+    niceTicks(0, ymax, 4).forEach(v => { g.strokeStyle = TOK['--rule']; g.beginPath(); g.moveTo(L, Y(v)); g.lineTo(L + pw, Y(v)); g.stroke(); g.fillStyle = TOK['--muted']; g.fillText(v + ' px', 2, Y(v) + 4); });
+    niceTicks(0, T, 6).forEach(t => { g.fillStyle = TOK['--muted']; g.fillText(t + ' s', Math.min(X(t) - 8, W - 34), H - 6); });
+    if (pe < L + pw - 70) { g.fillStyle = TOK['--muted']; g.fillText("after AM's plan", pe + 6, Tp + 12); }
+    g.strokeStyle = TOK['--bad']; g.setLineDash([5, 4]); g.beginPath(); g.moveTo(L, Y(5)); g.lineTo(L + pw, Y(5)); g.stroke(); g.setLineDash([]);
+    g.fillStyle = TOK['--bad']; g.fillText('rule: 5 px', L + 6, Y(5) - 5);
+    g.strokeStyle = TOK['--accent']; g.lineWidth = 2; g.beginPath();
+    let on = false;
+    F.forEach(f => { if (f.off === null) { on = false; return; } const x = X(f.t), y = Y(f.off); if (on) g.lineTo(x, y); else { g.moveTo(x, y); on = true; } });
+    g.stroke();
+    g.fillStyle = TOK['--bad'];
+    F.forEach(f => { if (f.off !== null && f.in_plan && f.off > 5) { g.beginPath(); g.arc(X(f.t), Y(f.off), 3.2, 0, 2 * Math.PI); g.fill(); } });
+  }
+  function shChartAt(e) {
+    if (!shGeom || !SH.score) return null;
+    const rc = e.currentTarget.getBoundingClientRect(), x = e.clientX - rc.left;
+    if (x < shGeom.L || x > shGeom.L + shGeom.pw) return null;
+    const t = (x - shGeom.L) / shGeom.pw * shGeom.T;
+    return SH.score.frames.reduce((a, f) => Math.abs(f.t - t) < Math.abs(a.t - t) ? f : a);
+  }
+
   // ---------- maps and jobs
   let mapsSeen = '';
   async function listMaps(current) {
@@ -1049,10 +1341,10 @@ td.now { min-width: 17ch; }
     let s;
     try { s = await getJSON('/api/status/' + jid); }
     catch (e) { status('Lost contact with the AM Map app. Check that it is still running, then reload.'); return; }
-    if (s.error) { status('AM could not finish: ' + s.error); $('extGo').disabled = false; return; }
+    if (s.error) { status('AM could not finish: ' + s.error); ['extGo', 'shGo'].forEach(b => { if ($(b)) $(b).disabled = false; }); return; }
     if (s.done) return onDone();
     if (words === 'map') stepsWhileMapping(s.stage);
-    status(({ 'puzzle-eyes': "AM's puzzle: lifting the pieces out of the last frame…", 'puzzle-stage': "AM's puzzle: fitting the stage and the camera…", 'puzzle-pieces': "AM's puzzle: cutting the pieces apart…", 'puzzle-relations': "AM's puzzle: what rests on what…", queued: 'Waiting for the job before it to finish…', eyes: "Step 1: AM's eyes are boxing every object…", lift: "Steps 2 to 5: lifting to 3D, shared memory, AM's core reasoner and sweep. About 2 minutes per 5 s of video.", scene: 'Step 6: mapping the room…', proof: 'AM is answering frames hidden from it, to prove it generalises on this video…', extend: 'AM is reasoning past the last frame: the math for the extension…' })[s.stage] || 'Working…');
+    status(({ 'puzzle-eyes': "AM's puzzle: lifting the pieces out of the last frame…", 'puzzle-stage': "AM's puzzle: fitting the stage and the camera…", 'puzzle-pieces': "AM's puzzle: cutting the pieces apart…", 'puzzle-relations': "AM's puzzle: what rests on what…", queued: 'Waiting for the job before it to finish…', eyes: "Step 1: AM's eyes are boxing every object…", lift: "Steps 2 to 5: lifting to 3D, shared memory, AM's core reasoner and sweep. About 2 minutes per 5 s of video.", scene: 'Step 6: mapping the room…', proof: 'AM is answering frames hidden from it, to prove it generalises on this video…', extend: 'AM is reasoning past the last frame: the math for the extension…', 'shot-solve': "AM is working out the shot: the piece's place and size at every frame…", 'shot-guide': 'AM locked its numbers; drawing them as the guide video…', 'take-normalise': 'Reading the take and the guide at the puzzle frame\'s size…', 'take-track': 'Following the piece through the guide and the take, frame by frame…', 'take-label': "Drawing AM's numbers on the take…" })[s.stage] || 'Working…');
     setTimeout(() => poll(jid, onDone, words), 1500);
   }
   async function mapFile(file) {

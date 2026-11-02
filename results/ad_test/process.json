@@ -1,0 +1,97 @@
+{
+ "steps": [
+  {
+   "step": "AM's eyes and map of the photo (built by am_map.py)",
+   "at": "2026-11-02 20:12:31",
+   "seconds": 0.0,
+   "seconds_measured": 19.1,
+   "tokens": 0,
+   "objects": 1
+  },
+  {
+   "step": "AM's puzzle: the surface and the pieces (built by am_puzzle.py)",
+   "at": "2026-11-02 20:12:31",
+   "seconds": 0.0,
+   "seconds_measured": 2.5,
+   "camera_above_stage_cm": 117.9,
+   "tilt_down_deg": 23.9,
+   "stage_rms_cm": 0.87,
+   "pieces": [
+    {
+     "id": 1,
+     "kind": "subject",
+     "box": [
+      122,
+      180,
+      483,
+      955
+     ]
+    },
+    {
+     "id": 2,
+     "kind": "thing",
+     "box": [
+      13,
+      939,
+      82,
+      114
+     ]
+    },
+    {
+     "id": 3,
+     "kind": "thing",
+     "box": [
+      17,
+      999,
+      701,
+      279
+     ]
+    }
+   ]
+  },
+  {
+   "step": "The scene in AM's centimetres: metric depth through the stated lens",
+   "at": "2026-11-02 20:12:36",
+   "seconds": 4.936,
+   "product_piece": 1,
+   "product_centre_cm": [
+    -0.7,
+    -2.1,
+    113.6
+   ],
+   "product_distance_cm": 113.6,
+   "depth_cm": {
+    "min": 72.2,
+    "median": 130.4,
+    "max": 325.8
+   },
+   "note": "AM's stated lens is 60 degrees; on this photo its centimetres are scaled wrong, and the shot uses only angles and fractions"
+  },
+  {
+   "step": "The equation solved: arc 8 degrees to the left, end distance 0.896 of the start so the product fills 85% of the height",
+   "at": "2026-11-02 20:12:36",
+   "seconds": 0.093,
+   "d0": 113.6,
+   "d_end": 101.78,
+   "frames": 450,
+   "fps": 30
+  },
+  {
+   "step": "The lock: plan.json written, SHA-256 recorded before anything is generated",
+   "at": "2026-11-02 20:12:36",
+   "seconds": 0.005,
+   "sha256": "8b9b09135f34d2e69ae9d9ab34ef2a2c8b4821754676063edaf8d968c98b2e66"
+  },
+  {
+   "step": "The guide drawn: the photo re-projected through AM's camera, 450 frames",
+   "at": "2026-11-02 20:16:24",
+   "seconds": 228.009,
+   "unseen_share": {
+    "max": 0.1015,
+    "median": 0.04195
+   }
+  }
+ ],
+ "total_seconds_this_run": 233.07,
+ "tokens": 0
+}

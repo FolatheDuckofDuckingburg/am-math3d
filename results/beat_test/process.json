@@ -1,0 +1,221 @@
+{
+ "steps": [
+  {
+   "step": "AM maps the whole clip: eyes, metric depth, shared memory, AM's core reasoner (built earlier)",
+   "at": "2026-11-02 19:46:51",
+   "seconds": 0.003,
+   "clip_seconds_measured": 131.2,
+   "stages": {
+    "markers_tracking": 0.28,
+    "depth_and_lift": {
+     "wall": 28.24,
+     "cpu": 8.0
+    },
+    "am": {
+     "wall": 95.96,
+     "cpu": 95.2,
+     "tokens": 0
+    },
+    "tracking": {
+     "wall": 2.39
+    },
+    "scene": {
+     "wall": 2.06
+    }
+   },
+   "tokens": 0,
+   "found": "dancers' up-and-down: object 1 REPEAT period 14, kept 51 of 55; object 2 REPEAT period 14, kept 46 of 55; object 4 REPEAT period 14, kept 50 of 55; object 5 REPEAT period 14, kept 50 of 55; object 6 REPEAT period 14, kept 44 of 55"
+  },
+  {
+   "step": "AM maps the clip's last 55 frames (95-149) and reasons over them again",
+   "at": "2026-11-02 19:46:51",
+   "seconds": 0.003,
+   "clip_seconds_measured": 101.1,
+   "stages": {
+    "markers_tracking": 0.22,
+    "depth_and_lift": {
+     "wall": 14.47,
+     "cpu": 4.16
+    },
+    "am": {
+     "wall": 81.75,
+     "cpu": 81.19,
+     "tokens": 0
+    },
+    "tracking": {
+     "wall": 2.2
+    },
+    "scene": {
+     "wall": 1.53
+    }
+   },
+   "tokens": 0,
+   "found": "dancers' up-and-down: object 1 REPEAT period 13, kept 52 of 55; object 2 REPEAT period 24, kept 51 of 55; object 5 REPEAT period 13, kept 50 of 55"
+  },
+  {
+   "step": "The pixels, without AM: how well the clip matches itself shifted by p frames",
+   "at": "2026-11-02 19:46:52",
+   "seconds": 0.858,
+   "best_lags": {
+    "0-54": [
+     14,
+     15,
+     13
+    ],
+    "55-149": [
+     13,
+     12,
+     14
+    ],
+    "100-149": [
+     13,
+     12,
+     14
+    ]
+   },
+   "curves": {
+    "0-54": {
+     "4": 32.777,
+     "5": 35.947,
+     "6": 37.997,
+     "7": 39.055,
+     "8": 39.214,
+     "9": 38.365,
+     "10": 36.494,
+     "11": 33.659,
+     "12": 29.985,
+     "13": 26.055,
+     "14": 23.46,
+     "15": 25.014,
+     "16": 29.034,
+     "17": 33.145,
+     "18": 36.547,
+     "19": 39.13,
+     "20": 40.925,
+     "21": 41.912,
+     "22": 42.144,
+     "23": 41.535,
+     "24": 39.986,
+     "25": 37.557,
+     "26": 34.481,
+     "27": 30.967,
+     "28": 27.779
+    },
+    "55-149": {
+     "4": 32.64,
+     "5": 35.069,
+     "6": 36.287,
+     "7": 36.41,
+     "8": 35.555,
+     "9": 33.939,
+     "10": 31.646,
+     "11": 29.027,
+     "12": 26.8,
+     "13": 26.181,
+     "14": 28.246,
+     "15": 31.896,
+     "16": 35.228,
+     "17": 37.54,
+     "18": 38.792,
+     "19": 38.994,
+     "20": 38.281,
+     "21": 36.622,
+     "22": 34.404,
+     "23": 32.406,
+     "24": 30.78,
+     "25": 30.043,
+     "26": 30.643,
+     "27": 32.143,
+     "28": 34.442
+    },
+    "100-149": {
+     "4": 33.298,
+     "5": 35.785,
+     "6": 37.091,
+     "7": 37.355,
+     "8": 36.65,
+     "9": 35.343,
+     "10": 33.687,
+     "11": 31.87,
+     "12": 29.962,
+     "13": 29.022,
+     "14": 30.547,
+     "15": 33.742,
+     "16": 36.843,
+     "17": 39.063,
+     "18": 40.231,
+     "19": 40.301,
+     "20": 39.379,
+     "21": 37.488,
+     "22": 35.44,
+     "23": 34.419,
+     "24": 34.397,
+     "25": 34.636,
+     "26": 34.973,
+     "27": 35.777,
+     "28": 37.524
+    }
+   }
+  },
+  {
+   "step": "AM's law for the new frames: frame t = frame t - 13 (its period at the end of the clip)",
+   "at": "2026-11-02 19:46:52",
+   "seconds": 0.0,
+   "period_frames": 13,
+   "period_seconds": 0.4333,
+   "beats_per_minute": 138.5,
+   "cycles_tried": [
+    {
+     "start": 137,
+     "frames": [
+      137,
+      149
+     ],
+     "join_error": 53.41
+    },
+    {
+     "start": 111,
+     "frames": [
+      111,
+      123
+     ],
+     "join_error": 58.2
+    },
+    {
+     "start": 124,
+     "frames": [
+      124,
+      136
+     ],
+     "join_error": 69.48
+    },
+    {
+     "start": 98,
+     "frames": [
+      98,
+      110
+     ],
+     "join_error": 73.08
+    }
+   ],
+   "cycle": [
+    137,
+    149
+   ]
+  },
+  {
+   "step": "The guide drawn: 96 frames at 30 fps, 1280x720; every frame's source recorded",
+   "at": "2026-11-02 19:46:58",
+   "seconds": 6.281,
+   "path": "am_beat_guide_1280x720.mp4"
+  },
+  {
+   "step": "The lock: plan.json written, SHA-256 recorded before anything is generated",
+   "at": "2026-11-02 19:46:58",
+   "seconds": 0.0,
+   "sha256": "b5ce4f668399b336a0396e39ac09e31346dbfadef18804fd38e0f3c7221a6cfa"
+  }
+ ],
+ "total_seconds_this_run": 7.14,
+ "tokens": 0
+}

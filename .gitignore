@@ -13,5 +13,12 @@ maps/*
 maps/sample/build.log
 !maps/sora_206/
 maps/sora_206/build.log
+!maps/sora_130/
+maps/sora_130/build.log
+!maps/vazram/
+maps/vazram/build.log
+results/beat_test/rebuild/
 results/chess_test/rerun/
+# your shots and takes stay on this Mac
+maps/*/shots/
 *.tmp
