@@ -1,0 +1,18 @@
+{
+ "seal": "29fad5aa52dbc55f611426e62d60654cf8036c0fa2b91d7fa2e3830df9501099",
+ "seal_verified": true,
+ "generator": "Kling 4.0 Edit, one take, orange-cat prompt; output 4.04 s at 24 fps, 1280x720",
+ "measured": "the pawn's head top in every frame (854x480 scale), against AM's sealed head position at the same moment",
+ "frames": 97,
+ "median_px": 5.9,
+ "worst_px": 26.9,
+ "last_frame_px": 2.9,
+ "start": "2.6-7 px (0-0.5 s)",
+ "lift": "4.7-24 px (0.67-1.17 s; the paw lifts it higher and swings it sideways)",
+ "set_down": "3.8-5.3 px, at 1.5 s as AM said",
+ "rest": "7.6 px (1.67-2.83 s), then 3 px from 3.0 s to the end",
+ "end_square": "3,3 (AM's target)",
+ "board": "AM's sealed grid sits on Kling's squares",
+ "verdict": "FOLLOWS AM's numbers: right square, right time, right size at the end (2.9 px); not exact in the lift (worst 27 px)",
+ "notes": "first detector runs were contaminated by the board's dark squares and the cat; this score reads the pawn's head against the sky"
+}

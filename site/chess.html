@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cats Playing Chess</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<main>
+  <header class="stack">
+    <a class="back" href="index.html">← AM Exact Video</a>
+    <div class="eyebrow">Final test · locked before generation, measured frame by frame</div>
+    <h1>Cats Playing Chess</h1>
+    <p class="lede prose">A Sora clip of two cats at a chessboard. AM built the board as exact geometry, worked out one pawn's move as numbers for every frame, and locked them. A video model painted the move four times; we measured each take against AM's numbers.</p>
+    <div class="figures">
+      <div class="figure"><b>PASS</b><span>the final take, within 3.4 px of AM at every frame of the plan</span></div>
+      <div class="figure"><b>98.7%</b><span>of 303 board samples agree with AM's 5×5 board</span></div>
+      <div class="figure"><b>8 of 36</b><span>numbers AM's core reasoner ruled with proof on this clip; the camera CANNOT</span></div>
+      <div class="figure"><b>4 takes</b><span>2 failed, 1 followed but improvised, 1 passed</span></div>
+    </div>
+  </header>
+
+  <section class="stack" aria-labelledby="req">
+    <h2 id="req">The request</h2>
+    <div class="request">
+      <img src="media/chess_board_grid.jpg" alt="The chessboard with AM's 5 by 5 grid and every square named">
+      <div class="stack">
+        <p class="ask">"The grey cat moves a pawn two steps."</p>
+        <p>AM's answer for two steps: CANNOT. On this board every pawn's second square ahead is taken, grey or dark. So the move became one square: the dark pawn on square 3,4 goes to 3,3, toward the camera.</p>
+        <dl class="facts">
+          <dt>Clip</dt><dd>Sora, 854×480, 30 fps, 150 frames; AM's board is its last frame</dd>
+          <dt>Board</dt><dd>5×5 squares (Sora drew 5×5, not 8×8), seen from 13.1° above its surface</dd>
+          <dt>Squares</dt><dd>column, row: columns 0–4 from the left, rows 0–4 from the camera</dd>
+          <dt>Pawn</dt><dd class="num">square 3,4 · foot (460, 303) px · 61 px tall</dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <section class="stack" aria-labelledby="core">
+    <h2 id="core">What AM worked out before generation</h2>
+    <div class="core">
+      <div class="stack prose">
+        <p><b>The map.</b> AM's eyes measured 6 objects through all 150 frames in 3D. AM's core reasoner ruled 8 of their 36 own numbers with a proven rule (EXACT, REPEAT, LOCAL) and answered CANNOT for 28, and for the camera: Sora's frames wobble and morph. 116 s on the Mac, no tokens.</p>
+        <p><b>The board.</b> AM learns the board's two colours from where they meet, finds the grid size (it tries 3 to 10 squares), and refines the four corners until the pattern fits: 98.7% of 303 samples agree. The lens then gives the board in 3D.</p>
+        <p><b>The shot.</b> The pawn's place on the board and its size on screen at every one of 91 frames, through AM's lens and board, locked with SHA-256 before anything was generated.</p>
+      </div>
+      <div class="eq">board squares: u across, v away from the camera, w up
+s = clamp((t − 0.5) / 1.0, 0, 1)
+e = 3s² − 2s³              (starts and stops at rest)
+u = 3.24    v = 4.42 − e    w = 0
+[x, y, 1] ∝ K·(u·r₁ + v·r₂ + w·r₃ + T)
+K: f = 740 px, centre (427, 240)
+foot (460, 303) → (464, 324) px
+height 61 → 66 px  (size = f·H/Z)</div>
+    </div>
+    <p class="note prose">One mistake on the way: the first locked plan moved the crowned piece in front of the grey cat, picked by height instead of shape. It was voided before anything was generated and locked again on the real pawn.</p>
+  </section>
+
+  <section class="explain" aria-labelledby="how">
+    <h2 id="how">How AM's math drives the shot</h2>
+    <div class="pair">
+      <figure><video src="media/chess_label_guide.mp4" poster="media/chess_label_guide_last.jpg" controls muted playsinline loop preload="metadata"></video><figcaption>AM's locked numbers on the guide: the green box is AM's pawn at each frame, the green line its path, cyan the board.</figcaption></figure>
+      <figure><video src="media/chess_label_kling.mp4" poster="media/chess_label_kling_last.jpg" controls muted playsinline loop preload="metadata"></video><figcaption>The final take with AM's marks: the amber cross is the pawn Kling painted, and the panel shows its distance from AM at every frame.</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="stack" aria-labelledby="takes">
+    <h2 id="takes">Every take</h2>
+
+    <div class="take am">
+      <div class="take-head"><span class="pill ok">PASS</span><h3>Kling 4.0 Edit · the pawn slides by itself</h3></div>
+      <div class="media">
+        <figure><video src="media/chess_kling_slide.mp4" poster="media/chess_kling_slide_last.jpg" controls muted playsinline loop preload="metadata"></video><figcaption>Video, 4.04 s</figcaption></figure>
+        <figure><img src="media/chess_kling_slide_last.jpg" alt="Last frame: the dark pawn on square 3,3"><figcaption>Last frame</figcaption></figure>
+      </div>
+      <div class="metrics"><span class="good">median 1.7 px</span><span class="good">worst 3.4 px in the plan</span><span class="good">rests 1.5 px from AM on 3,3</span><span>slides 0.5–1.5 s</span><span>lock e9c256d1…83ab</span><span>about 5,245 credits</span></div>
+    </div>
+
+    <div class="take">
+      <div class="take-head"><span class="pill part">FOLLOWS, NOT EXACT</span><h3>Kling 4.0 Edit · the orange cat lifts the pawn</h3></div>
+      <div class="media">
+        <figure><video src="media/chess_kling_orange.mp4" poster="media/chess_kling_orange_last.jpg" controls muted playsinline loop preload="metadata"></video><figcaption>Video, 4.04 s</figcaption></figure>
+        <figure><img src="media/chess_kling_orange_last.jpg" alt="Last frame: the dark pawn on square 3,3 after the orange cat moved it"><figcaption>Last frame</figcaption></figure>
+      </div>
+      <div class="metrics"><span>median 5.9 px</span><span class="bad">up to 27 px while the paw lifts it higher and swings it</span><span class="good">set down at 1.5 s</span><span class="good">ends 2.9 px from AM on 3,3</span><span>lock 29fad5aa…1099</span><span>about 5,245 credits</span></div>
+    </div>
+
+    <div class="take">
+      <div class="take-head"><span class="pill no">FAIL</span><h3>Kling 4.0 Edit · the grey cat moves the pawn</h3></div>
+      <div class="media">
+        <figure><video src="media/chess_kling_grey.mp4" poster="media/chess_kling_grey_last.jpg" controls muted playsinline loop preload="metadata"></video><figcaption>Video, 4.04 s</figcaption></figure>
+        <figure><img src="media/chess_kling_grey_last.jpg" alt="Last frame: a dark pawn in the middle column near the camera"><figcaption>Last frame</figcaption></figure>
+      </div>
+      <div class="metrics"><span class="bad">the grey cat moved a piece on its own side</span><span class="bad">a dark pawn ends on 2,0, about 3.4 squares off</span><span>the board redrawn slightly</span><span>lock 29fad5aa…1099 (3.03 s plan; Kling needs 3 s)</span><span>about 5,245 credits</span></div>
+    </div>
+
+    <div class="take">
+      <div class="take-head"><span class="pill no">FAIL</span><h3>FLUX 3 Edit · the grey cat moves the pawn</h3></div>
+      <div class="media">
+        <figure><video src="media/chess_flux_grey.mp4" poster="media/chess_flux_grey_last.jpg" controls muted playsinline loop preload="metadata"></video><figcaption>Video, 2.54 s</figcaption></figure>
+        <figure><img src="media/chess_flux_grey_last.jpg" alt="Last frame: the dark pawn near the camera in the middle column"><figcaption>Last frame</figcaption></figure>
+      </div>
+      <div class="metrics"><span class="bad">moved the pawn to the empty column in its first frame</span><span class="bad">pushed 2.1 squares, ends on 2,1, 2.24 squares off</span><span class="good">board and camera held (corners within 5–9 px)</span><span>lock 14de6e99…0893</span><span>about 455 credits</span></div>
+    </div>
+  </section>
+
+  <section class="stack prose" aria-labelledby="why">
+    <h2 id="why">Why two takes went their own way</h2>
+    <p>The pawn that moves stands next to the orange cat, at the far end of the board from the grey cat. Asked to have the grey cat move it, both FLUX and Kling made the grey cat move a piece within its own reach, down the empty middle column, and AM's numbers were ignored. When the ask fit the scene, Kling followed AM except where it had to invent the paw's lift. With nothing to invent, it followed every frame.</p>
+  </section>
+
+  <section class="stack" aria-labelledby="cost">
+    <h2 id="cost">What it cost</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Item</th><th>Measured</th><th>Cost</th></tr></thead>
+      <tbody>
+        <tr><td>AM: map (149.5 s), board, locked plan, guide</td><td class="n">about 166 s, 0 tokens</td><td class="n">about $0.0014</td></tr>
+        <tr><td>FLUX 3 Edit, take 1 (2.5 s)</td><td class="n">about 455 credits</td><td class="n">about $0.09</td></tr>
+        <tr><td>Kling 4.0 Edit, takes 2–4 (3.03 s each)</td><td class="n">about 15,735 credits</td><td class="n">about $3.15</td></tr>
+        <tr class="total"><td>The exact shot, take 4 alone</td><td class="n">1 take</td><td class="n">about $1.05</td></tr>
+      </tbody>
+    </table></div>
+    <p class="muted" style="font-size:0.92rem">Credits at the listed rates (FLUX 182, Kling 1,730 a second) and $0.0002 a credit.</p>
+  </section>
+
+  <section class="stack" aria-labelledby="measure">
+    <h2 id="measure">How it was measured</h2>
+    <ul class="list prose">
+      <li>The same detector reads the pawn's head in AM's guide and in the painted video, frame for frame, in the same window, so its bias cancels. The head, because the foot hides behind the grey pawn in front once the dark pawn lands.</li>
+      <li>16 grey pawns that never move sit within about 1 px of the original frame in Kling's video (scale 1.0009): camera and board unchanged.</li>
+      <li>After 3.5 s the detector reads 8 px; pixel alignment between 3.0 s and 4.0 s gives a shift of 0 px. A highlight brightened; the pawn did not move.</li>
+      <li>Two earlier detectors were discarded: one locked onto dark squares, one compared different points of the pawn.</li>
+      <li>Every lock was checked with sha256sum after generation.</li>
+    </ul>
+  </section>
+
+  <p class="back"><a href="index.html">← AM Exact Video</a> · <a href="mouse.html">The Mouse Jump →</a></p>
+</main>
+</body>
+</html>

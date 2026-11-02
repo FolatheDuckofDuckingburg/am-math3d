@@ -1,0 +1,3 @@
+FLUX 3 Edit (video edit), input video: chess_guide_1280x720.mp4
+
+Keep everything exactly where it is in every frame: the board, every chess piece, the hourglass, both cats and the camera. The dark pawn moves exactly as it moves in this video: lifted, carried one square toward the camera and set down, at the same moments and to the same place. Make it natural: the grey cat reaches across the board with its paw, picks up the dark pawn, carries it exactly along that path, sets it down on the square in front, and pulls its paw back. Do not add, move or remove anything else.

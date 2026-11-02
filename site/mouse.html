@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Mouse Jump</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<main>
+  <header class="stack">
+    <a class="back" href="index.html">← AM Exact Video</a>
+    <div class="eyebrow">First test</div>
+    <h1>The Mouse Jump</h1>
+    <p class="lede prose">A Sora clip of a mouse chef in a frying pan. The ask: jump 14 cm high onto the tomato plate and land at 1.33 s. Prompts never got there. One take guided by AM's numbers landed 3 px from AM's spot.</p>
+    <div class="figures">
+      <div class="figure"><b>3 px</b><span>landing distance from AM's spot, at 1.29 s (asked 1.33 s)</span></div>
+      <div class="figure"><b>3.7 px</b><span>median distance from AM's path over all 97 frames</span></div>
+      <div class="figure"><b>0 of 11</b><span>prompt-only takes that landed where asked</span></div>
+      <div class="figure"><b>14 of 30</b><span>numbers AM's core reasoner ruled with proof on this clip; the camera CANNOT</span></div>
+    </div>
+  </header>
+
+  <section class="stack" aria-labelledby="req">
+    <h2 id="req">The request</h2>
+    <div class="request">
+      <img src="media/mouse_puzzle.jpg" alt="The clip's last frame with each piece coloured: the mouse in the pan, the plate, the bowls and the parsley">
+      <div class="stack">
+        <p class="ask">"Jump 14 cm high, out of the pan, onto the tomato plate."</p>
+        <dl class="facts">
+          <dt>Mouse</dt><dd>104 cm from the camera, 9 × 14.6 cm, sitting in the pan</dd>
+          <dt>Plate</dt><dd>174 cm away, 72 cm to the right</dd>
+          <dt>Counter</dt><dd>the camera 27.7 cm above it, tilted 3.8° down; fitted to 0.63 cm</dd>
+          <dt>Lens</dt><dd>60° wide (stated), f = 740 px</dd>
+          <dt>AM's core</dt><dd>14 of 30 numbers ruled; the mouse's own motion and the camera CANNOT (Sora's wobble), so the jump starts from the measured last frame</dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <section class="stack" aria-labelledby="eq">
+    <h2 id="eq">The jump as exact math</h2>
+    <div class="eq">s = (k − 24) / 8            take-off at 1.0 s, 8 frames in the air (0.333 s at 24 fps)
+X, Z: a straight line from the pan to the plate
+height above that line: 4 · Hap · s(1 − s),   Hap = g·T²/8 = 13.6 cm   (g = 981 cm/s²)
+→ the same fall every airborne frame: gravity, exactly
+size on screen = f · H / Z   (perspective)</div>
+  </section>
+
+  <section class="stack" aria-labelledby="takes">
+    <h2 id="takes">The takes</h2>
+
+    <div class="take am">
+      <div class="take-head"><span class="pill ok">LANDS</span><h3>FLUX 3 Edit · repaints AM's guide video</h3></div>
+      <div class="media">
+        <figure><video src="media/mouse_flux_G.mp4" poster="media/mouse_flux_G_last.jpg" controls muted playsinline loop preload="metadata"></video><figcaption>Video, 4 s</figcaption></figure>
+        <figure><img src="media/mouse_flux_G_last.jpg" alt="Last frame: the mouse on the tomato plate"><figcaption>Last frame</figcaption></figure>
+      </div>
+      <div class="metrics"><span class="good">lands 3 px from AM's spot</span><span class="good">at 1.29 s (asked 1.33 s)</span><span class="good">median 3.7 px from AM's path, 97 frames</span><span>size 0.95×</span><span>735 credits, about $0.15</span></div>
+    </div>
+
+    <div class="take">
+      <div class="take-head"><span class="pill part">AM'S GUIDE</span><h3>AM's numbers drawn as the guide</h3></div>
+      <div class="media">
+        <figure><video src="media/mouse_guide.mp4" poster="media/mouse_guide_last.jpg" controls muted playsinline loop preload="metadata"></video><figcaption>Video, 4 s</figcaption></figure>
+        <figure><img src="media/mouse_guide_last.jpg" alt="Last frame of the guide: the mouse at AM's landing spot"><figcaption>Last frame</figcaption></figure>
+      </div>
+      <div class="metrics"><span>the mouse's own pixels, moved to AM's place and size at every frame</span><span>about 4 s on the Mac</span></div>
+    </div>
+
+    <div class="take">
+      <div class="take-head"><span class="pill no">STOPS SHORT</span><h3>Veo 3.1 Lite · normal prompt</h3></div>
+      <div class="media">
+        <figure><video src="media/mouse_prompt_A.mp4" poster="media/mouse_prompt_A_last.jpg" controls muted playsinline loop preload="metadata"></video><figcaption>Video, 4 s</figcaption></figure>
+        <figure><img src="media/mouse_prompt_A_last.jpg" alt="Last frame: the mouse short of the plate"><figcaption>Last frame</figcaption></figure>
+      </div>
+      <div class="metrics"><span class="bad">never reaches the plate</span><span>727 credits, about $0.15</span></div>
+    </div>
+  </section>
+
+  <section class="stack" aria-labelledby="all">
+    <h2 id="all">All routes</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Route</th><th>Takes</th><th>Result</th><th>Cost</th></tr></thead>
+      <tbody>
+        <tr><td>Prompts only: plain words, tuned words, AM's numbers written as text</td><td class="n">11</td><td>0 exact; the mouse stays in its own depth plane</td><td class="n">$0.87 for the 6 plate takes</td></tr>
+        <tr><td>Veo 3.1 Lite with AM's end frame</td><td class="n">1 each</td><td>pan landing 3.7 px off; plate landing 4 px off but a second late</td><td class="n">727 credits a take</td></tr>
+        <tr class="total"><td>AM's guide + FLUX 3 Edit</td><td class="n">1</td><td>3 px at landing, on time to 0.04 s</td><td class="n">735 credits, about $0.15</td></tr>
+      </tbody>
+    </table></div>
+    <p class="muted" style="font-size:0.92rem">AM's own part, the 3D map, the guide and the end frame, took about 290 s on the Mac the first time: about $0.0024, no tokens.</p>
+  </section>
+
+  <section class="stack" aria-labelledby="corr">
+    <h2 id="corr">Corrections since the first write-up</h2>
+    <ul class="list prose">
+      <li>The jump equation and the guide drawing were written during the test from AM's measurements. AM's core reasoner answered CANNOT on the clip's own motion, so no rule of its went into the jump.</li>
+      <li>The chef's hat floating in the FLUX take came from the guide's background picture, which still held the hat; Apple Vision's mask had missed its top. It was not the model's doing. AM's board of the FLUX take showed the hat 36.6 cm above the counter resting on nothing, which led to the fix.</li>
+      <li>A cleaner guide for this shot, with the whole mouse and hat moving, was blocked by FLUX three times ("may violate our Terms of Service"; not charged). The chess test was run instead.</li>
+    </ul>
+  </section>
+
+  <p class="back"><a href="index.html">← AM Exact Video</a> · <a href="chess.html">Cats Playing Chess →</a></p>
+</main>
+</body>
+</html>

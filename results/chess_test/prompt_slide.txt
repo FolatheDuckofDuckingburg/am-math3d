@@ -1,0 +1,3 @@
+Kling 4.0 Edit or FLUX 3 Edit, input video: chess_slide_guide_1280x720.mp4
+
+Edit this video. Keep every frame exactly as it is: the board, every chess piece on its square, the hourglass, both cats and the camera. Only one thing moves: the dark pawn on the back row, fourth column from the left. It slides by itself, without lifting, straight toward the camera by exactly one square, starting at 0.5 seconds and stopping at 1.5 seconds, exactly as in this video, then stays there. No cat touches it; both cats only watch. Nothing else moves. Make the pawn look real, with its shadow sliding with it. Do not add, move or remove anything else.

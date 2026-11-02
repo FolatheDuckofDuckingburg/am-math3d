@@ -1,0 +1,115 @@
+{
+ "clip": "206_20250114_sora.mp4",
+ "frame": 149,
+ "time": 4.967,
+ "size": [
+  854,
+  480
+ ],
+ "lens": {
+  "f": 739.5856948319108,
+  "cx": 427.0,
+  "cy": 240.0,
+  "fov": 60.0
+ },
+ "depth_model": "outdoor",
+ "camera": {
+  "height": 269.0,
+  "tilt_down": 18.3
+ },
+ "stage": {
+  "normal": [
+   -0.032,
+   -0.9487,
+   -0.3146
+  ],
+  "offset": 268.99,
+  "inliers": 0.091,
+  "rms_cm": 0.84,
+  "axes": {
+   "across": [
+    0.9995,
+    -0.0304,
+    -0.0101
+   ],
+   "forward": [
+    0.0,
+    -0.3148,
+    0.9492
+   ],
+   "origin": [
+    8.61,
+    255.19,
+    84.63
+   ]
+  }
+ },
+ "pieces": [
+  {
+   "id": 1,
+   "kind": "subject",
+   "stands": {
+    "across": -252.1,
+    "forward": 929.8,
+    "up": -63.2
+   },
+   "size": {
+    "across": 442.6,
+    "forward_seen": 525.3,
+    "up": 168.8
+   },
+   "top": 168.8,
+   "rests_on": "stage",
+   "distance_cm": 620.2,
+   "box": [
+    102,
+    0,
+    610,
+    480
+   ],
+   "area": 150491,
+   "am": {
+    "object": 1,
+    "overlap": 0.5,
+    "frames": 150,
+    "numbers": {
+     "rX": {
+      "rule": "CANNOT",
+      "band": 5.95,
+      "measured": 150
+     },
+     "rY": {
+      "rule": "CANNOT",
+      "band": 4.13,
+      "measured": 150
+     },
+     "rZ": {
+      "rule": "CANNOT",
+      "band": 24.11,
+      "measured": 150
+     },
+     "W": {
+      "rule": "CANNOT",
+      "band": 11.39,
+      "measured": 150
+     },
+     "H": {
+      "rule": "CANNOT",
+      "band": 5.95,
+      "measured": 150
+     },
+     "oB": {
+      "rule": "CANNOT",
+      "band": 2.32,
+      "measured": 150
+     }
+    }
+   }
+  }
+ ],
+ "relations": [],
+ "scenery": 5,
+ "seconds": 5.2,
+ "cost_usd": 4.3e-05,
+ "tokens": 0
+}

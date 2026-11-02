@@ -1,0 +1,3 @@
+Kling 4.0 Edit, input video: chess_guide_3s_1280x720.mp4   (optional image ref: chess_end_frame.png)
+
+Edit this video. Keep every frame exactly as it is: the board, every chess piece on its starting square, the hourglass, both cats and the camera. Only one thing moves: the dark pawn on the back row, fourth column from the left. It moves exactly as in this video: at 0.5 seconds it is lifted, carried straight toward the camera by exactly one square, and set down at 1.5 seconds, then stays there. It never moves sideways, and no other piece moves. Make it natural: the grey cat reaches across the board with its paw, picks up that pawn, carries it along that exact path, sets it down, and pulls its paw back. Do not add, move or remove anything else.

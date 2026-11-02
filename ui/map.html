@@ -1,0 +1,1086 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AM Map</title>
+<style>
+/* Layout: AM's eyes on the video and the 3D map side by side over one timeline that runs past the clip into AM's
+   extension; then how AM extends (its proof on this video, and the math for the new frames); then AM's core reasoner:
+   a verdict for every number, and for the selected object the proof of each rule over every frame. */
+:root {
+  --ground: #f1f3f2; --surface: #ffffff; --ink: #141816; --muted: #59645f; --rule: #d6dcd9; --sel: #edf6f1;
+  --accent: #15804d; --accent-soft: #d7efe1; --bad: #c2412d; --bad-soft: #fbe8e4; --cannot: #7d8782; --cannot-soft: #eceeed;
+  --patch: #1b78a8; --guess: #6a4fd6; --zone-ext: rgba(21, 128, 77, 0.08); --zone-hid: rgba(106, 79, 214, 0.07);
+  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-data: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --ground: #0d1110; --surface: #151a18; --ink: #e5ebe8; --muted: #97a39d; --rule: #29322e; --sel: #17261e;
+    --accent: #4fd393; --accent-soft: #1b3a2a; --bad: #f2806d; --bad-soft: #3a1f1a; --cannot: #808b85; --cannot-soft: #202624;
+    --patch: #5cc4ea; --guess: #a996ff; --zone-ext: rgba(79, 211, 147, 0.09); --zone-hid: rgba(169, 150, 255, 0.09);
+    color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--ground); color: var(--ink); font: 14px/1.5 var(--font-ui); }
+main { max-width: 1340px; margin: 0 auto; padding: 22px 16px 64px; display: grid; gap: 16px; }
+header { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: end; justify-content: space-between; }
+h1 { font-size: 26px; line-height: 1.15; margin: 0; letter-spacing: -0.01em; }
+h2 { font-size: 18px; margin: 0; text-wrap: balance; }
+.sub { color: var(--muted); margin: 4px 0 0; max-width: 78ch; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+button, select, label.btn { font: 500 13px var(--font-ui); border: 1px solid var(--rule); background: var(--surface); color: var(--ink); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+select { max-width: 240px; }
+button.primary, label.btn { background: var(--accent); border-color: var(--accent); color: #fff; }
+button:disabled { opacity: 0.55; cursor: progress; }
+@media (prefers-color-scheme: dark) { button.primary, label.btn { color: #06130c; } }
+button:focus-visible, select:focus-visible, label.btn:focus-within, canvas:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.status { color: var(--muted); font-size: 13px; min-height: 20px; }
+.mono { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+
+.steps { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+.step { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 10px 12px; display: grid; gap: 1px; align-content: start; min-width: 0; }
+.step b { font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.step .num { font: 600 17px var(--font-data); font-variant-numeric: tabular-nums; color: var(--ink); }
+.step span { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+.step.working { border-color: var(--accent); }
+.step.working .num { color: var(--accent); }
+.step.waiting { opacity: 0.55; }
+
+.views { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; display: grid; grid-template-rows: auto auto 1fr; min-width: 0; }
+.panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--rule); font-weight: 600; }
+.panel-head span { color: var(--muted); font-weight: 400; font-size: 12.5px; text-align: right; }
+.stage { position: relative; background: #000; aspect-ratio: 16 / 9; }
+.stage video, .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.stage video { object-fit: fill; }
+#eyes { cursor: pointer; }
+#map3d { background: #0b0e0d; cursor: grab; touch-action: none; }
+.stage .note { position: absolute; inset: auto 0 0 0; margin: 0; padding: 10px 12px; color: #cfd6d2; font-size: 12.5px; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 8px 12px; color: var(--muted); font-size: 12.5px; border-top: 1px solid var(--rule); align-content: start; }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -2px; margin-right: 5px; }
+
+.timeline { display: flex; gap: 12px; align-items: center; background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 10px 14px; }
+.slide { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.slide input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
+.bar { display: flex; height: 5px; border-radius: 3px; overflow: hidden; margin: 0 8px; }
+.bar .c { background: var(--rule); }
+.bar .e { background: var(--accent); }
+.barlabel { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); margin: 0 8px; }
+.timeline .mono { min-width: 15ch; text-align: right; }
+
+.ext { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 14px 16px; display: grid; gap: 12px; }
+.ext-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; }
+.ext-head p { margin: 4px 0 0; color: var(--muted); max-width: 92ch; }
+.ext-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.ext-card { border: 1px solid var(--rule); border-radius: 10px; padding: 10px 12px; display: grid; gap: 3px; align-content: start; min-width: 0; }
+.ext-card b { font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.ext-card .big { font: 600 20px var(--font-data); font-variant-numeric: tabular-nums; }
+.ext-card p { margin: 0; font-size: 13px; color: var(--muted); }
+.ext-foot { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; font-size: 13px; }
+.toggle { display: inline-flex; gap: 8px; align-items: center; cursor: pointer; }
+.toggle input { accent-color: var(--accent); width: 16px; height: 16px; }
+
+.puzzle { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 14px 16px; display: grid; gap: 12px; }
+.pz-head p { margin: 4px 0 0; color: var(--muted); max-width: 96ch; }
+.pz-facts { margin: 0; font-size: 12.5px; color: var(--ink); background: var(--ground); border-radius: 8px; padding: 8px 10px; }
+.pz-views { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+#pz2d { cursor: pointer; }
+#pz3d { background: #0b0e0d; cursor: grab; touch-action: none; }
+.pz-rel { margin: 0; font-size: 13px; color: var(--muted); }
+.warn { color: var(--bad); font-weight: 600; }
+@media (max-width: 1060px) { .pz-views { grid-template-columns: minmax(0, 1fr); } }
+.core { display: grid; gap: 12px; }
+.core-head p { margin: 4px 0 0; color: var(--muted); max-width: 92ch; }
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; }
+table { border-collapse: collapse; width: 100%; min-width: 940px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-size: 11.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+tr:last-child td { border-bottom: 0; }
+tbody tr { cursor: pointer; }
+tbody tr.sel td { background: var(--sel); }
+.pick { border: 0; background: none; padding: 0; font: 600 14px var(--font-data); color: var(--ink); display: inline-flex; align-items: center; gap: 7px; }
+.swatch { display: inline-block; width: 11px; height: 11px; border-radius: 3px; }
+.swatch.cam { background: transparent; border: 1.5px dashed var(--muted); }
+td.now { min-width: 17ch; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip { font: 12px var(--font-data); border-radius: 6px; padding: 3px 7px; white-space: nowrap; }
+.chip.ok { background: var(--accent-soft); color: var(--accent); }
+.chip.bad { background: var(--bad-soft); color: var(--bad); }
+.chip.cannot { background: var(--cannot-soft); color: var(--cannot); }
+
+.proof { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 12px 14px 14px; display: grid; gap: 10px; }
+.proof-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 16px; }
+.proof-head h3 { margin: 0; font-size: 15px; }
+.keys { display: flex; flex-wrap: wrap; gap: 4px 14px; color: var(--muted); font-size: 12.5px; align-items: center; }
+.keys svg { vertical-align: -2px; margin-right: 5px; }
+.charts { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+.card { margin: 0; border: 1px solid var(--rule); border-radius: 10px; padding: 9px 10px 8px; display: grid; gap: 6px; min-width: 0; }
+.card figcaption { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 13px; }
+.card canvas { width: 100%; height: 140px; display: block; cursor: crosshair; }
+.formula { margin: 0; font-size: 11.5px; color: var(--muted); overflow-wrap: anywhere; display: grid; gap: 2px; }
+#tip { position: fixed; z-index: 9; pointer-events: none; background: var(--ink); color: var(--surface); font: 12px/1.45 var(--font-data); padding: 6px 9px; border-radius: 7px; max-width: 340px; }
+
+.how { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 14px 16px; display: grid; gap: 10px; }
+.how ol { margin: 0; padding-left: 1.3em; display: grid; gap: 8px; max-width: 112ch; }
+.how code { font: 12.5px var(--font-data); background: var(--ground); padding: 1px 5px; border-radius: 4px; }
+@media (max-width: 1060px) { .views { grid-template-columns: minmax(0, 1fr); } .steps { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .ext-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 560px) { .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } .panel-head span { display: none; } .timeline { flex-wrap: wrap; } .timeline .mono { min-width: 0; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>AM Map</h1>
+      <p class="sub">AM's eyes measure every object in 3D, AM's core reasoner proves the rule each number follows over the clip, and the last frame becomes AM's geometric puzzle: the board an intent is solved on. Where AM cannot, it says CANNOT. Everything runs on this Mac.</p>
+    </div>
+    <div class="actions">
+      <select id="maps" aria-label="Map to show"></select>
+      <select id="kind" aria-label="Scene type for a new video"><option value="indoor">Indoor scene</option><option value="outdoor">Outdoor scene</option></select>
+      <label class="btn" for="file">Map a video<input id="file" type="file" accept="video/mp4,video/quicktime" hidden></label>
+    </div>
+  </header>
+  <div class="status" id="status" role="status"></div>
+
+  <section class="steps" id="steps" aria-label="How this map was built"></section>
+
+  <section class="views">
+    <div class="panel">
+      <div class="panel-head">AM's eyes <span>click a box to see AM's proof</span></div>
+      <div class="stage" id="eyesStage"><video id="vid" muted playsinline preload="auto"></video><canvas id="eyes" aria-label="Video with AM's boxes"></canvas></div>
+      <div class="legend">
+        <span><i style="background:#15804d"></i>✓ every rule AM wrote holds here · AM's math</span>
+        <span><i style="background:#c2412d"></i>✗ this number breaks its rule here</span>
+        <span><i style="background:#58625d"></i>CANNOT, or held by your choice</span>
+        <span><i style="border:1.5px dashed var(--muted)"></i>background patch (shared memory)</span>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">The 3D map <span>drag to turn · scroll to zoom · double-click to reset</span></div>
+      <div class="stage"><canvas id="map3d" tabindex="0" aria-label="3D map of the scene"></canvas></div>
+      <div class="legend">
+        <span>dots: the room from metric depth</span>
+        <span>panels: each object's front, at its 3D place and size</span>
+        <span>lines: paths (dashed: AM's extension)</span>
+        <span>dashed ray: the lens to the selected object</span>
+        <span>wedge: the camera · white dashes: its track</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="timeline">
+    <button id="play" type="button" class="primary">Play</button>
+    <div class="slide">
+      <input id="slider" type="range" min="0" max="0" value="0" aria-label="Frame">
+      <div class="bar" aria-hidden="true"><i class="c" id="barC"></i><i class="e" id="barE"></i></div>
+      <div class="barlabel"><span id="barClip"></span><span id="barExt"></span></div>
+    </div>
+    <span class="mono" id="time">0.00 s · frame 0</span>
+  </section>
+
+  <section class="puzzle" aria-labelledby="pzTitle">
+    <div class="pz-head">
+      <div>
+        <h2 id="pzTitle">AM's geometric puzzle</h2>
+        <p>The clip's last frame as exact geometry: the stage things stand on, the camera above it, every piece with its place and real size, what rests on what, and what AM proved about each piece over the whole clip. An intent is a question asked on this board; AM solves it, and the answer's numbers go to the generator as a picture.</p>
+      </div>
+    </div>
+    <p class="pz-facts mono" id="pzFacts">Loading the puzzle…</p>
+    <div class="pz-views">
+      <div class="panel"><div class="panel-head">The pieces <span>click a piece</span></div><div class="stage" id="pzStage"><canvas id="pz2d" aria-label="The last frame with AM's pieces"></canvas></div></div>
+      <div class="panel"><div class="panel-head">The board in 3D <span>drag to turn · scroll to zoom · double-click to reset</span></div><div class="stage"><canvas id="pz3d" tabindex="0" aria-label="The puzzle in 3D"></canvas></div></div>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Piece</th><th>Stands at (cm)</th><th>Real size (cm)</th><th>Rests on</th><th>What AM proved over the clip</th></tr></thead>
+      <tbody id="pzPieces"></tbody>
+    </table></div>
+    <p class="pz-rel" id="pzRel"></p>
+  </section>
+
+  <section class="core">
+    <div class="core-head">
+      <h2>AM's core reasoner</h2>
+      <p>Every object has six numbers of its own once the camera is cancelled: where it sits across, up and down, and in depth, its width, its height and its brightness. For each one AM writes a rule and proves it frame by frame, or says CANNOT. Pick a row to see the proof.</p>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Object</th><th>Frames</th><th>3D now (cm)</th><th>AM's verdict on each number, at this frame</th></tr></thead>
+      <tbody id="objects"><tr><td colspan="4" class="muted">Loading…</td></tr></tbody>
+    </table></div>
+    <div class="proof">
+      <div class="proof-head">
+        <h3 id="proofTitle">AM's proof</h3>
+        <div class="keys">
+          <span><svg width="22" height="10" aria-hidden="true"><rect x="0" y="0" width="22" height="10" rx="2" fill="var(--accent-soft)"/><line x1="0" y1="5" x2="22" y2="5" stroke="var(--accent)" stroke-width="2"/></svg>AM's rule and its band</span>
+          <span><svg width="10" height="10" aria-hidden="true"><circle cx="5" cy="5" r="2.6" fill="var(--ink)" opacity="0.6"/></svg>measured</span>
+          <span><svg width="10" height="10" aria-hidden="true"><circle cx="5" cy="5" r="3.2" fill="var(--bad)"/></svg>breaks the rule</span>
+          <span><svg width="10" height="10" aria-hidden="true"><rect x="1.5" y="1.5" width="7" height="7" fill="none" stroke="var(--patch)" stroke-width="1.5"/></svg>answer from AM's 3D law</span>
+        </div>
+      </div>
+      <div class="charts" id="charts"></div>
+    </div>
+  </section>
+
+  <section class="how">
+    <h2>How AM maps, reasons and extends</h2>
+    <ol>
+      <li><b>Eyes.</b> Apple Vision boxes every object in every frame: centre <code>x, y</code> and size <code>w, h</code> in pixels.</li>
+      <li><b>3D lift.</b> A stated lens, 60° wide, so <code>f = (W/2) / tan 30°</code> (740 px for an 854 px frame). Metric depth (Depth Anything V2 Metric) gives <code>Z</code>, the median depth of the box's inner 60%. Then <code>X = (x − cx)·Z/f</code>, <code>Y = (y − cy)·Z/f</code>, and the real size <code>W = w·Z/f</code>, <code>H = h·Z/f</code>, in centimetres.</li>
+      <li><b>Shared memory.</b> Six textured background patches, away from every object, are followed from the first frame and lifted the same way. Their median movement is the camera's track; their median brightness change is the exposure. Taking both away leaves each object's own numbers: <code>rX = X − camera X</code> (and so for Y and Z), <code>W</code>, <code>H</code>, and brightness <code>oB</code>.</li>
+      <li><b>AM reasons.</b> For each own number, AM's hives each propose a rule: EXACT (a chain of operations on the frame number <code>t</code>), SHAPE (<code>a·s(t) + b</code>), REPEAT (a table that repeats with a period) or LOCAL (a line through nearby frames). AM's number law reads what they report and names one, or answers CANNOT. The band <code>τ = 3σ + 0.5</code> comes from the number's own frame-to-frame noise.</li>
+      <li><b>The puzzle.</b> The last frame as a board: the stage is the surface things stand on, fitted as a plane to the metric-depth points, which gives the camera's height and tilt above it. The pieces are the subject Apple Vision lifts out, plus everything standing up off the stage over its own footprint, cut apart where depth jumps; walls and cupboards are scenery. Each piece gets its place in stage coordinates (across, forward, up), its real size, what it rests on (the stage, another piece, or nothing), and what AM proved about it over the clip.</li>
+      <li><b>The intent.</b> What you want to happen is a question on that board: which piece goes where, how high, by when. Its answer is exact numbers for every new frame, turned back into boxes on screen by the lens (<code>x = cx + f·X/Z</code>, <code>y = cy + f·Y/Z</code>, <code>w = f·W/Z</code>, <code>h = f·H/Z</code>), and handed to the video model as a picture, which it follows; numbers in words it does not.</li>
+    </ol>
+  </section>
+</main>
+<div id="tip" hidden></div>
+
+<script src="/vendor/three.min.js"></script>
+<script>
+(function () {
+  const PAL = ['#4c8dff', '#ffb020', '#b07cff', '#ff6fae', '#5fd0ff', '#c9a26b', '#8f95ff', '#d6d65a'];
+  const NUM = ['rX', 'rY', 'rZ', 'W', 'H', 'oB'], CAMK = ['mX', 'mY', 'mZ'];
+  const IDX = { rX: 11, rY: 12, rZ: 13, W: 8, H: 9, oB: 14 };
+  const NAMES = { rX: 'across', rY: 'up/down', rZ: 'depth', W: 'width', H: 'height', oB: 'brightness', mX: 'across', mY: 'up/down', mZ: 'depth' };
+  const ON_VIDEO = { ok: '#15804d', bad: '#c2412d', cannot: '#58625d' };
+  const STEPS = ['Eyes', '3D lift', 'Shared memory', 'AM core reasoner', 'Sweep', 'Map'];
+  const TAIL = 30;
+  const unit = k => k === 'oB' ? 'lv' : 'cm';
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const $ = id => document.getElementById(id);
+  const vid = $('vid'), eyes = $('eyes'), ectx = eyes.getContext('2d'), slider = $('slider');
+  let M = null, E = null, mapId = null, byId = {}, sel = null, charts = [], shownT = 0, lastT = -1, three = null, dirty = true;
+  let ext = null, extPlay = false, extStart = 0, playing = false, holdOwn = false;
+  const TOK = {};
+
+  function readTokens() {
+    const s = getComputedStyle(document.documentElement);
+    ['--ink', '--muted', '--rule', '--accent', '--accent-soft', '--bad', '--cannot', '--patch', '--guess', '--zone-ext', '--zone-hid', '--font-data', '--font-ui'].forEach(n => { TOK[n] = s.getPropertyValue(n).trim(); });
+  }
+  readTokens();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { readTokens(); lastT = -1; });
+  const status = s => { $('status').textContent = s || ''; };
+  const total = () => M.frames + (E ? E.extension.frames : 0);
+  const clampT = t => Math.min(M.frames - 1, Math.max(0, t));
+  const cur = () => ext !== null ? ext : shownT;
+  const inExt = t => !!E && t >= M.frames;
+  const extOf = id => E ? E.extension.objects.find(x => x.id === id) : null;
+  const proofOf = id => E ? E.proof.objects.find(x => x.id === id) : null;
+  const boxAt = (id, t) => { const x = extOf(id); return x ? x.boxes[holdOwn ? 'held' : 'am'][t - M.frames] : null; };
+  const camHeldAt = t => CAMK.filter(k => E.extension.camera[k].values[t - M.frames] === null).map(k => k.slice(1));
+  function markerAt(t) {
+    if (!inExt(t)) return M.marker[t];
+    const c = E.extension.camera, i = t - M.frames, m = {};
+    CAMK.forEach(k => { const v = c[k].values[i]; m[k.slice(1)] = v === null ? c[k].last : v; });
+    return m;
+  }
+
+  function rowAt(o, t) {
+    const i = t - o.first;
+    if (i >= 0 && i < o.rows.length && o.rows[i][0] === t) return o.rows[i];
+    let lo = 0, hi = o.rows.length - 1;
+    while (lo <= hi) { const m = (lo + hi) >> 1, v = o.rows[m][0]; if (v === t) return o.rows[m]; if (v < t) lo = m + 1; else hi = m - 1; }
+    return null;
+  }
+  function verdictAt(o, t) {
+    let ruled = 0; const broke = [];
+    for (const k of NUM) { const v = o.numbers[k]; if (v.rule !== 'CANNOT') { ruled++; if (v.brokenSet.has(t)) broke.push(k); } }
+    return { ruled, broke, kind: broke.length ? 'bad' : ruled ? 'ok' : 'cannot' };
+  }
+
+  // ---------- the steps that built the map
+  function stepsWhileMapping(stage) {
+    const at = { queued: -1, eyes: 0, lift: 1, scene: 5, proof: 6, extend: 6, done: 6 }[stage];
+    $('steps').innerHTML = STEPS.map((n, i) => {
+      const st = stage === 'lift' && i >= 1 && i <= 4 ? 'working' : i < at ? 'done' : i === at ? 'working' : 'waiting';
+      return '<div class="step ' + st + '"><b>' + (i + 1) + ' · ' + n + '</b><span class="num">' + ({ done: 'done', working: 'working…', waiting: '—' })[st] + '</span></div>';
+    }).join('');
+  }
+  function steps() {
+    const st = M.stages, objs = M.objects;
+    let ruled = 0, totalN = 0, runs = 0, answered = 0;
+    objs.forEach(o => {
+      NUM.forEach(k => { totalN++; if (o.numbers[k].rule !== 'CANNOT') ruled++; });
+      Object.values(o.swept).forEach(got => { runs++; answered += Object.keys(got).length; });
+    });
+    const camRuled = CAMK.filter(k => M.camera[k].rule !== 'CANNOT').length;
+    const pts = Object.values(M.points).reduce((a, p) => a + p.length / 6, 0);
+    const sec = x => x == null ? '' : ' · ' + (+x).toFixed(1) + ' s';
+    const cards = [
+      [objs.length + ' objects', 'boxed in all ' + M.frames + ' frames' + sec(st.tracking && st.tracking.wall)],
+      ['f = ' + Math.round(M.lens.f) + ' px', M.lens.fov + '° lens (stated), ' + M.depth_model + ' metric depth' + sec(st.depth_and_lift && st.depth_and_lift.wall)],
+      [M.patches.length + ' patches', 'give the camera track (' + (camRuled ? camRuled + ' of 3 ruled' : 'CANNOT') + ') and the exposure'],
+      [ruled + ' of ' + totalN, 'numbers ruled with proof, ' + (totalN - ruled) + ' CANNOT' + sec(st.am && st.am.wall) + ' with the sweep, 0 tokens'],
+      [answered + ' answers', 'for ' + runs * NUM.length + ' numbers asked on ' + runs + ' broken or hidden stretches'],
+      [Math.round(pts).toLocaleString() + ' points', 'room at ' + Object.keys(M.points).length + ' keyframes · ' + M.total_wall + ' s in all, about $' + M.cost_usd]
+    ];
+    $('steps').innerHTML = cards.map(([big, small], i) => '<div class="step"><b>' + (i + 1) + ' · ' + STEPS[i] + '</b><span class="num">' + big + '</span><span>' + small + '</span></div>').join('');
+  }
+
+  // ---------- AM's eyes, over the video; past the clip, AM's boxes over its last frame
+  function tag(x, y, a, b, pillColor, col) {
+    const wa = ectx.measureText(a).width + 13, wb = ectx.measureText(b).width + 12, ly = Math.max(0, y - 20);
+    ectx.fillStyle = 'rgba(0,0,0,0.75)'; ectx.fillRect(x, ly, wa, 20);
+    ectx.fillStyle = col; ectx.fillRect(x, ly, 3, 20);
+    ectx.fillStyle = '#fff'; ectx.fillText(a, x + 8, ly + 10.5);
+    ectx.fillStyle = pillColor; ectx.fillRect(x + wa, ly, wb, 20);
+    ectx.fillStyle = '#fff'; ectx.fillText(b, x + wa + 6, ly + 10.5);
+  }
+  function drawEyes(t) {
+    const W = eyes.clientWidth, H = eyes.clientHeight, d = devicePixelRatio;
+    if (eyes.width !== Math.round(W * d) || eyes.height !== Math.round(H * d)) { eyes.width = Math.round(W * d); eyes.height = Math.round(H * d); }
+    ectx.setTransform(d, 0, 0, d, 0, 0); ectx.clearRect(0, 0, W, H);
+    const sx = W / M.size[0], sy = H / M.size[1], ps = (M.patch_size || 48) / 2, past = inExt(t);
+    const pr = M.patch_xy && M.patch_xy[past ? M.frames - 1 : t];
+    if (pr) {
+      ectx.setLineDash([4, 3]); ectx.lineWidth = 1.5; ectx.globalAlpha = past ? 0.45 : 1;
+      pr.forEach(([id, x, y]) => {
+        ectx.strokeStyle = 'rgba(0,0,0,0.6)'; ectx.strokeRect((x - ps) * sx + 1, (y - ps) * sy + 1, 2 * ps * sx, 2 * ps * sy);
+        ectx.strokeStyle = '#ffffff'; ectx.strokeRect((x - ps) * sx, (y - ps) * sy, 2 * ps * sx, 2 * ps * sy);
+      });
+      ectx.setLineDash([]); ectx.globalAlpha = 1;
+    }
+    ectx.font = '600 11.5px ' + TOK['--font-data']; ectx.textBaseline = 'middle';
+    if (past) {
+      ectx.fillStyle = 'rgba(0,0,0,0.25)'; ectx.fillRect(0, 0, W, H);
+      E.extension.objects.forEach(x => {
+        const i = M.objects.findIndex(o => o.id === x.id), b = boxAt(x.id, t);
+        if (!b) return;
+        const col = PAL[i % PAL.length], on = sel === x.id, bx = (b.x - b.w / 2) * sx, by = (b.y - b.h / 2) * sy;
+        ectx.setLineDash(b.held.length ? [7, 4] : []); ectx.lineWidth = on ? 3.5 : 2.5; ectx.strokeStyle = col;
+        ectx.strokeRect(bx, by, b.w * sx, b.h * sy); ectx.setLineDash([]);
+        tag(bx, by, '#' + x.id + ' · Z ' + b.Z + ' cm', b.held.length ? 'held: ' + b.held.map(k => NAMES[k]).join(', ') : "AM's math", b.held.length ? ON_VIDEO.cannot : ON_VIDEO.ok, col);
+      });
+      if (!holdOwn && !E.extension.objects.some(x => boxAt(x.id, t))) {
+        const msg = "AM's math alone places no object here: every one has a number AM says CANNOT for. Tick “Hold what AM cannot extend” to draw them with your held values.";
+        ectx.font = '600 12.5px ' + TOK['--font-ui'];
+        const words = msg.split(' '), lines = [''];
+        words.forEach(w => { const s = lines[lines.length - 1] ? lines[lines.length - 1] + ' ' + w : w; if (ectx.measureText(s).width > W - 60) lines.push(w); else lines[lines.length - 1] = s; });
+        ectx.fillStyle = 'rgba(0,0,0,0.72)'; ectx.fillRect(16, H / 2 - lines.length * 10 - 10, W - 32, lines.length * 20 + 20);
+        ectx.fillStyle = '#fff'; lines.forEach((l, j) => ectx.fillText(l, 30, H / 2 - lines.length * 10 + 10 + j * 20));
+        ectx.font = '600 11.5px ' + TOK['--font-data'];
+      }
+      const ch = camHeldAt(t);
+      const banner ="AM's extension · +" + ((t - M.frames + 1) / M.fps).toFixed(2) + ' s after the clip' + (ch.length === 3 ? ' · camera held still (your call)' : ch.length ? ' · camera ' + ch.join(', ') + ' held (your call)' : '');
+      ectx.font = '600 12.5px ' + TOK['--font-data'];
+      const bw = ectx.measureText(banner).width + 18;
+      ectx.fillStyle = 'rgba(21,128,77,0.92)'; ectx.fillRect(8, 8, bw, 24);
+      ectx.fillStyle = '#fff'; ectx.fillText(banner, 17, 20.5);
+      return;
+    }
+    M.objects.forEach((o, i) => {
+      const r = rowAt(o, t); if (!r) return;
+      const v = verdictAt(o, t), col = PAL[i % PAL.length], on = sel === o.id;
+      const x = (r[1] - r[3] / 2) * sx, y = (r[2] - r[4] / 2) * sy;
+      ectx.lineWidth = on ? 3.5 : 2; ectx.strokeStyle = col; ectx.strokeRect(x, y, r[3] * sx, r[4] * sy);
+      tag(x, y, '#' + o.id + ' · Z ' + r[7] + ' cm', v.kind === 'ok' ? '✓ ' + v.ruled + (v.ruled === 1 ? ' rule' : ' rules') : v.kind === 'bad' ? '✗ ' + v.broke.map(k => NAMES[k]).join(', ') : 'CANNOT', ON_VIDEO[v.kind], col);
+    });
+  }
+  eyes.addEventListener('click', e => {
+    if (!M) return;
+    const t = cur(), rc = eyes.getBoundingClientRect(), px = (e.clientX - rc.left) * M.size[0] / rc.width, py = (e.clientY - rc.top) * M.size[1] / rc.height;
+    let best = null;
+    M.objects.forEach(o => {
+      const b = inExt(t) ? boxAt(o.id, t) : null, r = inExt(t) ? null : rowAt(o, t);
+      const c = b ? [b.x, b.y, b.w, b.h] : r ? [r[1], r[2], r[3], r[4]] : null;
+      if (c && Math.abs(px - c[0]) <= c[2] / 2 && Math.abs(py - c[1]) <= c[3] / 2 && (!best || c[2] * c[3] < best[1])) best = [o.id, c[2] * c[3]];
+    });
+    if (best) select(best[0]);
+  });
+
+  // ---------- the 3D map (camera space: x right, y up, the camera looks down -z)
+  const v3 = (X, Y, Z) => new THREE.Vector3(X, -Y, -Z);
+  function init3d() {
+    const canvas = $('map3d');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setPixelRatio(Math.min(2, devicePixelRatio));
+    renderer.setClearColor(0x0b0e0d);
+    const scene = new THREE.Scene();
+    const cam = new THREE.PerspectiveCamera(50, 16 / 9, 1, 8000);
+    const orbit = { theta: -0.35, phi: 1.25, r: 480, target: new THREE.Vector3(0, 0, -200) };
+    const place = () => {
+      const o = orbit;
+      cam.position.set(o.target.x + o.r * Math.sin(o.phi) * Math.sin(o.theta), o.target.y + o.r * Math.cos(o.phi), o.target.z + o.r * Math.sin(o.phi) * Math.cos(o.theta));
+      cam.lookAt(o.target); dirty = true;
+    };
+    let drag = null;
+    canvas.addEventListener('pointerdown', e => { drag = [e.clientX, e.clientY]; canvas.setPointerCapture(e.pointerId); canvas.style.cursor = 'grabbing'; });
+    canvas.addEventListener('pointerup', () => { drag = null; canvas.style.cursor = 'grab'; });
+    canvas.addEventListener('pointermove', e => {
+      if (!drag) return;
+      orbit.theta -= (e.clientX - drag[0]) * 0.006; orbit.phi = Math.min(3.0, Math.max(0.15, orbit.phi - (e.clientY - drag[1]) * 0.006));
+      drag = [e.clientX, e.clientY]; place();
+    });
+    canvas.addEventListener('wheel', e => { e.preventDefault(); orbit.r = Math.min(3000, Math.max(60, orbit.r * (1 + e.deltaY * 0.001))); place(); }, { passive: false });
+    canvas.addEventListener('dblclick', () => { home(); });
+    canvas.addEventListener('keydown', e => {
+      const k = { ArrowLeft: [-0.08, 0], ArrowRight: [0.08, 0], ArrowUp: [0, -0.08], ArrowDown: [0, 0.08] }[e.key];
+      if (k) { e.preventDefault(); orbit.theta += k[0]; orbit.phi = Math.min(3.0, Math.max(0.15, orbit.phi + k[1])); place(); }
+    });
+    const resize = () => {
+      const w = canvas.clientWidth, h = canvas.clientHeight; if (!w || !h) return;
+      renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); dirty = true;
+    };
+    new ResizeObserver(resize).observe(canvas); resize();
+    return { renderer, scene, cam, orbit, place, clouds: {}, keys: [], objs: [], dot: null };
+  }
+  function home() {
+    if (!three || !M) return;
+    const c = new THREE.Vector3(); let n = 0;
+    M.objects.forEach(o => o.rows.forEach(r => { c.add(v3(r[5], r[6], r[7])); n++; }));
+    if (n) c.divideScalar(n); else c.set(0, 0, -200);
+    Object.assign(three.orbit, { theta: -0.35, phi: 1.25, r: Math.max(250, 2 * c.length()), target: c });   // from behind the camera
+    three.place();
+  }
+  function sprite(text, color, wide) {
+    const w = wide ? 320 : 128, c = document.createElement('canvas'); c.width = w; c.height = 56;
+    const g = c.getContext('2d');
+    g.fillStyle = 'rgba(0,0,0,0.78)'; g.fillRect(0, 0, w, 56);
+    g.fillStyle = color; g.fillRect(0, 0, 9, 56);
+    g.fillStyle = '#fff'; g.font = '600 34px ui-monospace, Menlo, monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, w / 2 + 4, 30);
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false }));
+    s.scale.set(24 * w / 128, 10.5, 1); s.renderOrder = 10;
+    return s;
+  }
+  function dispose(x) { x.traverse(y => { if (y.geometry) y.geometry.dispose(); if (y.material) { if (y.material.map) y.material.map.dispose(); y.material.dispose(); } }); }
+  function build3d() {
+    try { if (!three) three = init3d(); }
+    catch (e) { $('map3d').parentElement.insertAdjacentHTML('beforeend', '<p class="note">This browser could not start WebGL, so the 3D map is off. The table and proofs below still hold every number.</p>'); return; }
+    const S = three.scene;
+    dispose(S);
+    while (S.children.length) S.remove(S.children[0]);
+    three.clouds = {};
+    for (const [k, p] of Object.entries(M.points)) {
+      const n = p.length / 6, pos = new Float32Array(n * 3), col = new Float32Array(n * 3);
+      for (let i = 0; i < n; i++) {
+        pos[3 * i] = p[6 * i]; pos[3 * i + 1] = -p[6 * i + 1]; pos[3 * i + 2] = -p[6 * i + 2];
+        col[3 * i] = p[6 * i + 3] / 255; col[3 * i + 1] = p[6 * i + 4] / 255; col[3 * i + 2] = p[6 * i + 5] / 255;
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      const pts = new THREE.Points(g, new THREE.PointsMaterial({ size: 3.2, vertexColors: true }));
+      pts.visible = false; S.add(pts); three.clouds[k] = pts;
+    }
+    three.keys = Object.keys(three.clouds).map(Number).sort((a, b) => a - b);
+    const f = M.lens.f, cx = M.lens.cx, cy = M.lens.cy, d = 70;
+    const corners = [[-cx, -cy], [cx, -cy], [cx, cy], [-cx, cy]].map(([u, v]) => v3(u * d / f, v * d / f, d));
+    const wedge = [];
+    corners.forEach((c, i) => { wedge.push(new THREE.Vector3(), c, c, corners[(i + 1) % 4]); });
+    S.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(wedge), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.75 })));
+    const track = Object.keys(M.marker).map(Number).sort((a, b) => a - b).map(t => v3(M.marker[t].X, M.marker[t].Y, M.marker[t].Z));
+    if (track.length > 1) {
+      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(track), new THREE.LineDashedMaterial({ color: 0xffffff, dashSize: 3, gapSize: 2, transparent: true, opacity: 0.7 }));
+      line.computeLineDistances(); S.add(line);
+    }
+    three.dot = new THREE.Mesh(new THREE.OctahedronGeometry(3.5), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    S.add(three.dot);
+    const square = [[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]].map(([a, b]) => new THREE.Vector3(a, b, 0));
+    three.objs = M.objects.map((o, i) => {
+      const col = new THREE.Color(PAL[i % PAL.length]);
+      const trail = new THREE.Line(new THREE.BufferGeometry().setFromPoints(o.rows.map(r => v3(r[5], r[6], r[7]))), new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: 0.5 }));
+      const edge = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(square), new THREE.LineBasicMaterial({ color: col, transparent: true }));
+      const fill = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.2, side: THREE.DoubleSide, depthWrite: false }));
+      const face = new THREE.Group(); face.add(edge, fill);
+      const label = sprite('#' + o.id, PAL[i % PAL.length]);
+      const ray = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineDashedMaterial({ color: col, dashSize: 5, gapSize: 4 }));
+      S.add(trail, face, label, ray);
+      return { o, col, trail, face, edge, fill, label, ray, extLine: null, extTs: [] };
+    });
+    buildExtTrails();
+    home();
+  }
+  function buildExtTrails() {
+    if (!three) return;
+    three.objs.forEach(g => {
+      if (g.extLine) { three.scene.remove(g.extLine); dispose(g.extLine); g.extLine = null; }
+      const x = extOf(g.o.id);
+      if (!x) return;
+      const bs = x.boxes[holdOwn ? 'held' : 'am'].filter(b => b);
+      if (bs.length < 2) return;
+      g.extTs = bs.map(b => b.t);
+      g.extLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(bs.map(b => v3(b.X, b.Y, b.Z))), new THREE.LineDashedMaterial({ color: g.col, dashSize: 4, gapSize: 3 }));
+      g.extLine.computeLineDistances(); three.scene.add(g.extLine);
+    });
+    dirty = true;
+  }
+  function update3d(t) {
+    if (!three || !three.dot) return;
+    let k = three.keys[0];
+    three.keys.forEach(x => { if (x <= t) k = x; });
+    for (const [kk, c] of Object.entries(three.clouds)) c.visible = +kk === k;
+    const m = markerAt(t);
+    three.dot.visible = !!m; if (m) three.dot.position.copy(v3(m.X, m.Y, m.Z));
+    const anyone = sel === null || sel === 'camera', past = inExt(t);
+    three.objs.forEach(g => {
+      const on = sel === g.o.id, r = past ? null : rowAt(g.o, t), b = past ? boxAt(g.o.id, t) : null;
+      const i = past ? g.o.rows.length - 1 : r ? g.o.rows.indexOf(r) : -1, a = Math.max(0, i - TAIL);   // the selected object's whole path, the others' last second
+      g.trail.material.opacity = on ? 0.95 : anyone ? 0.6 : 0.3;
+      if (on) g.trail.geometry.setDrawRange(0, Infinity); else g.trail.geometry.setDrawRange(a, i < 0 || (past && !extOf(g.o.id)) ? 0 : i - a + 1);
+      if (g.extLine) {
+        g.extLine.visible = on || past;
+        g.extLine.geometry.setDrawRange(0, on ? Infinity : g.extTs.filter(u => u <= t).length);
+      }
+      const P = b ? [b.X, b.Y, b.Z, b.W, b.H] : r ? [r[5], r[6], r[7], r[8], r[9]] : null;
+      g.face.visible = g.label.visible = !!P; g.ray.visible = !!P && on;
+      if (!P) return;
+      const p = v3(P[0], P[1], P[2]);
+      g.face.position.copy(p); g.face.scale.set(Math.max(1, P[3]), Math.max(1, P[4]), 1);
+      g.edge.material.opacity = on || anyone ? 1 : 0.35; g.fill.material.opacity = on ? 0.38 : anyone ? 0.2 : 0.07;
+      g.label.position.copy(v3(P[0], P[1] - P[4] / 2 - 7, P[2]));
+      if (on) { g.ray.geometry.setFromPoints([new THREE.Vector3(), p]); g.ray.computeLineDistances(); }
+    });
+    dirty = true;
+  }
+
+  // ---------- AM's verdict on every number
+  function buildTable() {
+    const row = (id, sw, name, frames, keys) => '<tr data-sel="' + id + '"><td><button class="pick" type="button" aria-pressed="false">' + sw + name + '</button></td><td class="mono">' + frames + '</td><td class="mono now"></td><td><div class="chips">' + keys.map(k => '<span class="chip" data-k="' + k + '"></span>').join('') + '</div></td></tr>';
+    $('objects').innerHTML = M.objects.map((o, i) => row(o.id, '<span class="swatch" style="background:' + PAL[i % PAL.length] + '"></span>', '#' + o.id, o.first + '–' + o.last + ' <span class="muted">(' + o.rows.length + ')</span>', NUM)).join('')
+      + row('camera', '<span class="swatch cam"></span>', 'Camera', '0–' + (M.frames - 1), CAMK);
+  }
+  function setChip(c, v, k, t) {
+    if (v.rule === 'CANNOT') { c.className = 'chip cannot'; c.textContent = NAMES[k] + ': CANNOT'; c.title = 'No rule within ± ' + v.band + ' ' + unit(k); return; }
+    const bad = v.brokenSet.has(t);
+    c.className = 'chip ' + (bad ? 'bad' : 'ok');
+    c.textContent = (bad ? '✗ ' : '✓ ') + NAMES[k] + ': ' + v.rule + ' ' + v.kept + '/' + v.measured;
+    c.title = k + '(t) = ' + v.formula + '  ± ' + v.band + ' ' + unit(k);
+  }
+  function setExtChip(c, xv, k, i, held) {
+    const v = xv.values[i];
+    if (v === null) { c.className = 'chip cannot'; c.textContent = NAMES[k] + ': CANNOT' + (held ? ' · held ' + xv.last : ''); c.title = "AM's extension has no value here"; return; }
+    c.className = 'chip ok';
+    c.textContent = '✓ ' + NAMES[k] + ': ' + v + ' ' + unit(k) + " · AM's future law";
+    c.title = "AM's future law answered this frame from the frames that kept their rules";
+  }
+  function tableNow(t) {
+    const past = inExt(t), i = t - M.frames;
+    $('objects').querySelectorAll('tr').forEach(tr => {
+      const id = tr.dataset.sel, on = String(sel) === id;
+      tr.classList.toggle('sel', on); tr.querySelector('button').setAttribute('aria-pressed', on);
+      if (id === 'camera') {
+        const m = markerAt(t);
+        tr.querySelector('.now').textContent = m ? (past ? "AM's extension: " : 'track ') + 'X ' + m.X + ' · Y ' + m.Y + ' · Z ' + m.Z : '—';
+        tr.querySelectorAll('.chip').forEach(c => past ? setExtChip(c, E.extension.camera[c.dataset.k], c.dataset.k, i, true) : setChip(c, M.camera[c.dataset.k], c.dataset.k, t));
+        return;
+      }
+      const o = byId[id];
+      if (past) {
+        const x = extOf(o.id), b = boxAt(o.id, t);
+        tr.querySelector('.now').innerHTML = !x ? '<span class="muted">left the view before the clip ended</span>'
+          : b ? "AM's extension<br>X " + b.X + ' · Y ' + b.Y + ' · Z ' + b.Z + '<br>' + b.W + ' × ' + b.H + ' cm' + (b.held.length ? ' <span class="muted">(held: ' + b.held.map(k => NAMES[k]).join(', ') + ')</span>' : '')
+          : '<span class="muted">AM cannot place it here</span>';
+        tr.querySelectorAll('.chip').forEach(c => x ? setExtChip(c, x.numbers[c.dataset.k], c.dataset.k, i, holdOwn) : setChip(c, o.numbers[c.dataset.k], c.dataset.k, -1));
+        return;
+      }
+      const r = rowAt(o, t);
+      tr.querySelector('.now').innerHTML = r ? 'X ' + r[5] + ' · Y ' + r[6] + ' · Z ' + r[7] + '<br>' + r[8] + ' × ' + r[9] + ' cm' : '<span class="muted">not in this frame</span>';
+      tr.querySelectorAll('.chip').forEach(c => setChip(c, o.numbers[c.dataset.k], c.dataset.k, r ? t : -1));
+    });
+  }
+  $('objects').addEventListener('click', e => {
+    const tr = e.target.closest('tr[data-sel]'); if (!tr || !M) return;
+    select(tr.dataset.sel === 'camera' ? 'camera' : +tr.dataset.sel);
+  });
+
+  // ---------- AM's proof for the selected object: the rule over the clip, the frames hidden from it, the extension
+  function series(key) {
+    let v, meas, lo, hi, title, xv = null, pv = null;
+    const swept = {};
+    if (sel === 'camera') {
+      const ax = key.slice(1);
+      v = M.camera[key]; lo = 0; hi = M.frames - 1; title = 'camera ' + NAMES[key] + ' (track ' + ax + ')';
+      meas = new Map(Object.entries(M.marker).map(([t, m]) => [+t, m[ax]]));
+      if (E) { xv = E.extension.camera[key]; pv = E.proof.camera[key]; }
+    } else {
+      const o = byId[sel], x = extOf(sel), p = proofOf(sel);
+      v = o.numbers[key]; lo = o.first; hi = o.last; title = NAMES[key] + ' (' + key + ')';
+      meas = new Map(o.rows.map(r => [r[0], r[IDX[key]]]));
+      Object.values(o.swept).forEach(got => { if (got[key]) Object.assign(swept, got[key]); });
+      if (x) xv = x.numbers[key];
+      if (p) pv = p.numbers[key];
+    }
+    const am = new Map();
+    if (v.am) v.am.forEach((a, i) => { if (a !== null) am.set(lo + i, a); });
+    const S = { key, title, rule: v.rule, band: v.band, formula: v.formula || '', kept: v.kept, measured: v.measured, broken: v.brokenSet, meas, am,
+      swept: new Map(Object.entries(swept).map(([t, x]) => [+t, x])), lo, hi, unit: unit(key), camera: sel === 'camera' };
+    if (xv) {
+      S.hi = M.frames + E.extension.frames - 1; S.xv = xv; S.ext = new Map(); S.extSrc = new Map();
+      xv.values.forEach((a, i) => { if (a !== null) { S.ext.set(M.frames + i, a); S.extSrc.set(M.frames + i, xv.src[i]); } });
+    }
+    if (pv) {
+      S.pv = pv; S.cut = E.proof.hidden_from; S.pred = new Map();
+      pv.pred.forEach(([t, got]) => { if (got !== null) S.pred.set(t, got); });
+    }
+    return S;
+  }
+  function buildCharts() {
+    const keys = sel === 'camera' ? CAMK : NUM;
+    $('proofTitle').textContent = sel === 'camera' ? "AM's proof: the camera's track" : "AM's proof: object #" + sel;
+    charts = keys.map(series);
+    $('charts').innerHTML = charts.map((S, i) => {
+      const ok = S.rule !== 'CANNOT';
+      const chip = ok ? '<span class="chip ok">' + S.rule + ' · keeps ' + S.kept + ' of ' + S.measured + '</span>' : '<span class="chip cannot">CANNOT</span>';
+      const lines = [ok ? 'clip: ' + S.key + '(t) = ' + esc(S.formula) + ' &nbsp;± ' + S.band + ' ' + S.unit
+        : 'clip: no rule holds within ± ' + S.band + ' ' + S.unit + ', the band set by its own noise; AM claims none.'];
+      if (S.pv) {
+        const p = S.pv;
+        lines.push('hidden from AM (frames ' + S.cut + '–' + (M.frames - 1) + '): ' + (p.answered ? p.right + ' right, ' + p.wrong + ' wrong' + (p.cannot ? ', ' + p.cannot + ' CANNOT' : '') : 'CANNOT on all ' + p.asked) + ' · holding the last value: ' + p.hold_right + ' of ' + p.asked);
+      }
+      if (S.xv) {
+        const n = S.ext.size, K = S.xv.values.length, law = [...S.extSrc.values()].filter(s => s === '3D law').length;
+        lines.push('extension (frames ' + M.frames + '–' + S.hi + '): ' + (n ? "AM's future law answers " + n + ' of ' + K + ' frames' + (law < n ? '' : '') : 'CANNOT' + (S.camera || holdOwn ? ' · held at ' + S.xv.last + ' ' + S.unit + ' (your call)' : '')));
+      }
+      return '<figure class="card"><figcaption><b>' + esc(S.title) + '</b>' + chip + '</figcaption><canvas data-i="' + i + '" role="img" aria-label="' + esc(S.title) + ': measured values, AM\'s rule, its answers on hidden frames and its extension"></canvas><p class="formula mono">' + lines.map(l => '<span>' + l + '</span>').join('') + '</p></figure>';
+    }).join('');
+    $('charts').querySelectorAll('canvas').forEach(c => {
+      c.addEventListener('mousemove', hover);
+      c.addEventListener('mouseleave', () => { $('tip').hidden = true; });
+      c.addEventListener('click', e => { const u = frameAt(e); if (u !== null) seek(u); });
+    });
+  }
+  const PADL = 42, PADR = 8, PADT = 8, PADB = 18;
+  function niceTicks(lo, hi, n) {
+    const raw = (hi - lo) / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    let step = [1, 2, 5, 10].map(m => m * mag).find(s => s >= raw), out;
+    do {                                                   // halve the step until at least two ticks fit
+      out = [];
+      for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) out.push(Math.round(v * 100) / 100);
+      step /= 2;
+    } while (out.length < 2);
+    return out;
+  }
+  function runsOf(map, lo, hi) {
+    const out = []; let cur = null;
+    for (let u = lo; u <= hi; u++) { const a = map.get(u); if (a === undefined) { cur = null; continue; } if (!cur) out.push(cur = []); cur.push([u, a]); }
+    return out;
+  }
+  function drawChart(c, S, t) {
+    const W = c.clientWidth, H = c.clientHeight, d = devicePixelRatio;
+    if (!W || !H) return;
+    if (c.width !== Math.round(W * d) || c.height !== Math.round(H * d)) { c.width = Math.round(W * d); c.height = Math.round(H * d); }
+    const g = c.getContext('2d'); g.setTransform(d, 0, 0, d, 0, 0); g.clearRect(0, 0, W, H);
+    const heldLine = S.xv && (S.camera || holdOwn) && S.ext.size < S.xv.values.length;
+    let lo = Infinity, hi = -Infinity;
+    const see = v => { if (v < lo) lo = v; if (v > hi) hi = v; };
+    S.meas.forEach(see); S.swept.forEach(see); S.am.forEach(a => { see(a - S.band); see(a + S.band); });
+    if (S.ext) S.ext.forEach(a => { see(a - S.xv.band); see(a + S.xv.band); });
+    if (S.pred) S.pred.forEach(see);
+    if (heldLine) see(S.xv.last);
+    if (lo === Infinity) return;
+    if (hi - lo < 2) { lo -= 1; hi += 1; }
+    const pad = (hi - lo) * 0.08; lo -= pad; hi += pad;
+    const X = u => PADL + (u - S.lo) / Math.max(1, S.hi - S.lo) * (W - PADL - PADR);
+    const Y = v => PADT + (hi - v) / (hi - lo) * (H - PADT - PADB);
+    const font = TOK['--font-data'];
+    const zone = (a, b, fill, text) => {
+      const x0 = Math.max(PADL, X(a - 0.5)), x1 = Math.min(W - PADR, X(b + 0.5));
+      if (x1 <= x0) return;
+      g.fillStyle = fill; g.fillRect(x0, PADT, x1 - x0, H - PADT - PADB);
+      g.fillStyle = TOK['--muted']; g.font = '9.5px ' + font; g.textAlign = 'left'; g.textBaseline = 'top'; g.fillText(text, x0 + 3, PADT + 2);
+    };
+    if (S.cut !== undefined) zone(Math.max(S.cut, S.lo), M.frames - 1, TOK['--zone-hid'], 'hidden from AM');
+    if (S.xv) zone(M.frames, S.hi, TOK['--zone-ext'], "AM's extension");
+    g.font = '10.5px ' + font; g.lineWidth = 1; g.textAlign = 'right'; g.textBaseline = 'middle';
+    niceTicks(lo, hi, 3).forEach(v => {
+      const y = Math.round(Y(v)) + 0.5;
+      g.strokeStyle = TOK['--rule']; g.beginPath(); g.moveTo(PADL, y); g.lineTo(W - PADR, y); g.stroke();
+      g.fillStyle = TOK['--muted']; g.fillText(String(v), PADL - 6, y);
+    });
+    g.textBaseline = 'alphabetic'; g.fillStyle = TOK['--muted'];
+    g.textAlign = 'left'; g.fillText('frame ' + S.lo, PADL, H - 4);
+    g.textAlign = 'right'; g.fillText(String(S.hi), W - PADR, H - 4);
+    const bandLine = (map, band, color, soft) => {
+      const runs = runsOf(map, S.lo, S.hi);
+      g.fillStyle = soft;
+      runs.forEach(run => {
+        g.beginPath();
+        run.forEach(([u, a], j) => j ? g.lineTo(X(u), Y(a + band)) : g.moveTo(X(u), Y(a + band)));
+        for (let j = run.length - 1; j >= 0; j--) g.lineTo(X(run[j][0]), Y(run[j][1] - band));
+        g.closePath(); g.fill();
+      });
+      g.strokeStyle = color; g.lineWidth = 2; g.lineJoin = 'round';
+      runs.forEach(run => { g.beginPath(); run.forEach(([u, a], j) => j ? g.lineTo(X(u), Y(a)) : g.moveTo(X(u), Y(a))); if (run.length === 1) g.lineTo(X(run[0][0]) + 1, Y(run[0][1])); g.stroke(); });
+    };
+    bandLine(S.am, S.band, TOK['--accent'], TOK['--accent-soft']);
+    if (S.ext) bandLine(S.ext, S.xv.band, TOK['--accent'], TOK['--accent-soft']);
+    if (heldLine) {
+      g.strokeStyle = TOK['--cannot']; g.setLineDash([5, 4]); g.lineWidth = 1.5;
+      runsOf(new Map(S.xv.values.map((a, i) => [M.frames + i, a === null ? S.xv.last : undefined]).filter(([, a]) => a !== undefined)), S.lo, S.hi)
+        .forEach(run => { g.beginPath(); g.moveTo(X(run[0][0]), Y(run[0][1])); g.lineTo(X(run[run.length - 1][0]) + 0.01, Y(run[0][1])); g.stroke(); });
+      g.setLineDash([]);
+    }
+    S.meas.forEach((v, u) => {
+      const br = S.broken.has(u);
+      g.globalAlpha = br ? 1 : 0.6;
+      g.fillStyle = br ? TOK['--bad'] : S.rule === 'CANNOT' ? TOK['--cannot'] : TOK['--ink'];
+      g.beginPath(); g.arc(X(u), Y(v), br ? 2.9 : 2.1, 0, 2 * Math.PI); g.fill();
+    });
+    g.globalAlpha = 1;
+    if (S.pred) {
+      g.strokeStyle = TOK['--guess']; g.setLineDash([4, 3]); g.lineWidth = 2;
+      runsOf(S.pred, S.lo, S.hi).forEach(run => { g.beginPath(); run.forEach(([u, a], j) => j ? g.lineTo(X(u), Y(a)) : g.moveTo(X(u), Y(a))); if (run.length === 1) g.lineTo(X(run[0][0]) + 2, Y(run[0][1])); g.stroke(); });
+      g.setLineDash([]);
+    }
+    g.strokeStyle = TOK['--patch']; g.lineWidth = 1.5;
+    S.swept.forEach((v, u) => g.strokeRect(X(u) - 3.5, Y(v) - 3.5, 7, 7));
+    if (t >= S.lo && t <= S.hi) {
+      const x = Math.round(X(t)) + 0.5;
+      g.strokeStyle = TOK['--ink']; g.globalAlpha = 0.45; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(x, PADT); g.lineTo(x, H - PADB); g.stroke(); g.globalAlpha = 1;
+      const v = S.meas.has(t) ? S.meas.get(t) : S.ext && S.ext.get(t);
+      if (v !== undefined) { g.lineWidth = 1.5; g.beginPath(); g.arc(X(t), Y(v), 4.6, 0, 2 * Math.PI); g.stroke(); }
+    }
+  }
+  function frameAt(e) {
+    const c = e.currentTarget, S = charts[+c.dataset.i], rc = c.getBoundingClientRect();
+    const u = Math.round(S.lo + (e.clientX - rc.left - PADL) / Math.max(1, rc.width - PADL - PADR) * (S.hi - S.lo));
+    return u < S.lo || u > S.hi ? null : u;
+  }
+  function hover(e) {
+    const S = charts[+e.currentTarget.dataset.i], u = frameAt(e), tip = $('tip');
+    if (u === null) { tip.hidden = true; return; }
+    const lines = [];
+    if (u >= M.frames) {
+      const i = u - M.frames, a = S.xv ? S.xv.values[i] : null;
+      lines.push('frame ' + u + ' · +' + ((u - M.frames + 1) / M.fps).toFixed(2) + ' s after the clip');
+      lines.push(a !== null && a !== undefined ? "AM's extension " + a + ' ' + S.unit + " (AM's future law)" : 'AM: CANNOT' + (S.xv && (S.camera || holdOwn) ? ' · held at ' + S.xv.last + ' (your call)' : ''));
+    } else {
+      const v = S.meas.get(u), a = S.am.get(u), s = S.swept.get(u), p = S.pred && S.pred.get(u);
+      lines.push('frame ' + u + ' · ' + (u / M.fps).toFixed(2) + ' s', v === undefined ? 'not measured here' : 'measured ' + v + ' ' + S.unit);
+      if (S.rule === 'CANNOT') lines.push('AM over the whole clip: CANNOT');
+      else if (a !== undefined) lines.push("AM's rule " + a + ' ' + S.unit + (v === undefined ? '' : S.broken.has(u) ? ' · breaks (off ' + Math.abs(v - a) + ' > ' + S.band + ')' : ' · holds (off ' + Math.abs(v - a) + ' ≤ ' + S.band + ')'));
+      if (s !== undefined) lines.push("AM's sweep " + s + ' ' + S.unit);
+      if (S.cut !== undefined && u >= S.cut) lines.push(p !== undefined ? 'hidden from AM; it answered ' + p + (v === undefined ? '' : Math.abs(v - p) <= S.pv.band ? ' · right (within ' + S.pv.band + ')' : ' · wrong (off ' + Math.abs(v - p) + ')') : 'hidden from AM; it said CANNOT');
+    }
+    lines.push('click to go to this frame');
+    tip.textContent = '';
+    lines.forEach((l, i) => { if (i) tip.appendChild(document.createElement('br')); tip.appendChild(document.createTextNode(l)); });
+    tip.hidden = false;
+    tip.style.left = Math.max(8, Math.min(innerWidth - tip.offsetWidth - 8, e.clientX + 14)) + 'px';
+    tip.style.top = Math.min(innerHeight - tip.offsetHeight - 8, e.clientY + 14) + 'px';
+  }
+  function select(id) { sel = id; buildCharts(); lastT = -1; }
+
+  // ---------- how AM extends: reasons, generalises (proven on this video), the math for the new frames
+  function renderExt() {
+    const has = !!E;
+    $('hold').disabled = !has;
+    if (!has) {
+      ['xReason', 'xProof', 'xMath'].forEach(id => { $(id).textContent = '—'; });
+      $('xReasonP').textContent = 'AM has not extended this map yet.'; $('xProofP').textContent = ''; $('xMathP').textContent = 'Choose how far, then Extend with AM.'; $('xCam').textContent = '';
+      return;
+    }
+    const P = E.proof, X = E.extension, T = P.total, n = M.frames;
+    let ruled = 0, all = 0, full = 0, part = 0, none = 0;
+    X.objects.forEach(o => NUM.forEach(k => {
+      all++; const v = o.numbers[k], got = v.values.filter(a => a !== null).length;
+      if (v.rule !== 'CANNOT') ruled++;
+      if (got === v.values.length) full++; else if (got) part++; else none++;
+    }));
+    const placed = X.objects.filter(o => o.boxes.am.some(b => b)).length;
+    $('xReason').textContent = ruled + ' of ' + all;
+    $('xReasonP').textContent = 'numbers of the ' + X.objects.length + ' objects still in view at the end keep a rule AM proved over the clip; the rest are CANNOT. The frames that keep every rule are what AM\'s future law reads.' + (X.left.length ? ' Objects ' + X.left.map(i => '#' + i).join(', ') + ' left the view before the end.' : '');
+    $('xProof').textContent = T.answered ? T.right + ' of ' + T.answered : 'CANNOT';
+    $('xProofP').textContent = 'AM saw frames 0–' + (P.hidden_from - 1) + ' and was asked frames ' + P.hidden_from + '–' + (n - 1) + ', which it never saw: ' + T.answered + ' of ' + T.asked + ' number-frames answered, ' + T.right + ' within the band, ' + T.wrong + ' outside; CANNOT on ' + T.cannot + '. Holding the last seen value: ' + T.hold_right + ' of ' + T.asked + ' within the band.';
+    $('xMath').textContent = full + ' + ' + part + ' of ' + all;
+    $('xMathP').textContent = 'numbers carry AM\'s value at every new frame (' + full + ') or at some (' + part + '), for frames ' + n + '–' + (n + X.frames - 1) + ' (' + E.seconds + ' s); ' + none + ' are CANNOT. ' + placed + ' of ' + X.objects.length + ' objects can be placed on screen from AM\'s math alone' + (holdOwn ? '; with your held values the rest are drawn dashed.' : '.') + ' Took ' + (E.stages.proof + E.stages.extend).toFixed(0) + ' s, about $' + E.cost_usd + ', no tokens.';
+    const camAM = CAMK.filter(k => X.camera[k].values.some(a => a !== null)).map(k => NAMES[k]);
+    $('xCam').textContent = 'Camera after the clip: ' + (camAM.length ? "AM's math for " + camAM.join(', ') + (camAM.length < 3 ? '; the rest held still (your call).' : '.') : 'AM has no rule for it, so it is held still (your call).');
+  }
+  function timelineBar() {
+    const n = M.frames, K = E ? E.extension.frames : 0;
+    $('barC').style.flex = String(n); $('barE').style.flex = String(K); $('barE').style.display = K ? '' : 'none';
+    $('barClip').textContent = 'clip: frames 0–' + (n - 1);
+    $('barExt').textContent = K ? "AM's extension: frames " + n + '–' + (n + K - 1) + ' (' + E.seconds + ' s)' : '';
+    slider.max = total() - 1;
+  }
+
+  // ---------- time: the frame on screen drives everything; past the clip, AM's extension plays
+  function stopPlay() { playing = false; extPlay = false; vid.pause(); $('play').textContent = 'Play'; }
+  function startPlay() {
+    playing = true; $('play').textContent = 'Pause';
+    if (ext !== null) { extPlay = true; extStart = performance.now() - (ext - M.frames) * 1000 / M.fps; }
+    else vid.play();
+  }
+  function seek(t) {
+    stopPlay();
+    if (inExt(t)) { ext = t; vid.currentTime = (M.frames - 0.5) / M.fps; }
+    else { ext = null; vid.currentTime = (t + 0.5) / M.fps; shownT = t; }
+    slider.value = t;
+  }
+  vid.addEventListener('ended', () => {
+    if (!playing) return;
+    if (E) { ext = M.frames; extPlay = true; extStart = performance.now(); }
+    else { vid.currentTime = 0; vid.play(); }
+  });
+  if ('requestVideoFrameCallback' in HTMLVideoElement.prototype) {
+    const onFrame = (now, meta) => { if (M) shownT = clampT(Math.floor(meta.mediaTime * M.fps + 1e-3)); vid.requestVideoFrameCallback(onFrame); };
+    vid.requestVideoFrameCallback(onFrame);
+  }
+  ['seeked', 'loadeddata'].forEach(ev => vid.addEventListener(ev, () => { if (M) shownT = clampT(Math.floor(vid.currentTime * M.fps + 1e-3)); }));
+  new ResizeObserver(() => { lastT = -1; }).observe(eyes);
+  function tick() {
+    if (M) {
+      if (extPlay) {
+        const u = M.frames + Math.floor((performance.now() - extStart) * M.fps / 1000);
+        if (u >= total()) { extPlay = false; ext = null; vid.currentTime = 0; shownT = 0; if (playing) vid.play(); }
+        else ext = u;
+      }
+      const t = cur();
+      if (t !== lastT) {
+        lastT = t;
+        drawEyes(t); update3d(t); tableNow(t);
+        $('charts').querySelectorAll('canvas').forEach(c => drawChart(c, charts[+c.dataset.i], t));
+        if (playing) slider.value = t;
+        $('time').textContent = inExt(t) ? '+' + ((t - M.frames + 1) / M.fps).toFixed(2) + ' s · AM ' + t : (t / M.fps).toFixed(2) + ' s · frame ' + t;
+      }
+      if (three && dirty) { three.renderer.render(three.scene, three.cam); dirty = false; }
+      if (pz3 && pzDirty) { pz3.renderer.render(pz3.scene, pz3.cam); pzDirty = false; }
+    }
+    requestAnimationFrame(tick);
+  }
+
+  // ---------- AM's geometric puzzle: the last frame as exact geometry
+  const PZC = ['#ff5a5a', '#4cc3ff', '#ffc400', '#b46bff', '#46e28a', '#ff7ac8', '#ff9a1f', '#2f9bff', '#c8ff3c', '#e8e8e8'];
+  let PZ = null, pzFrame = null, pzIds = null, pzSel = null, pzOverlay = null, pzOverlaySel = -1, pz3 = null, pzDirty = false;
+  const pzCol = id => PZC[(id - 1) % PZC.length];
+  const hexRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  async function loadPuzzle(id) {
+    PZ = null; pzSel = null; pzOverlay = null;
+    $('pzPieces').innerHTML = ''; $('pzRel').textContent = '';
+    try { PZ = await getJSON('/maps/' + encodeURIComponent(id) + '/puzzle.json'); }
+    catch (e) {
+      $('pzFacts').textContent = 'AM is building the puzzle of the last frame…';
+      try {
+        const j = await (await fetch('/api/puzzle/' + encodeURIComponent(id), { method: 'POST' })).json();
+        if (j.error) throw new Error(j.error);
+        return poll(j.id, () => { if (mapId === id) loadPuzzle(id); status(''); }, 'puzzle');
+      } catch (e2) { $('pzFacts').textContent = 'The puzzle could not be built: ' + e2.message; return; }
+    }
+    const load = f => new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(im); im.onerror = no; im.src = '/maps/' + encodeURIComponent(id) + '/' + f + '?v=' + PZ.seconds; });
+    const [img, lab] = await Promise.all([load('puzzle_frame.png'), load('puzzle_labels.png')]);
+    if (mapId !== id) return;
+    pzFrame = img;
+    const c = document.createElement('canvas'); c.width = lab.width; c.height = lab.height;
+    const g = c.getContext('2d'); g.drawImage(lab, 0, 0);
+    const data = g.getImageData(0, 0, c.width, c.height).data;
+    pzIds = new Uint8Array(c.width * c.height);
+    for (let i = 0; i < pzIds.length; i++) pzIds[i] = Math.round(data[4 * i] / 20);      // grey level = 20 x piece
+    $('pzStage').style.aspectRatio = PZ.size[0] + ' / ' + PZ.size[1];
+    const sub = PZ.pieces.find(p => p.kind === 'subject');
+    pzSel = sub ? sub.id : (PZ.pieces[0] || {}).id || null;
+    renderPuzzle(); buildPz3();
+  }
+  function renderPuzzle() {
+    if (!PZ) return;
+    const c = PZ.camera, floats = PZ.pieces.filter(p => p.kind === 'floating');
+    $('pzFacts').textContent = 'Frame ' + PZ.frame + ' (' + PZ.time.toFixed(2) + ' s) · camera ' + c.height + ' cm above the stage, tilted ' + c.tilt_down + '° down · lens 60°, f = ' + Math.round(PZ.lens.f) + ' px · stage fitted to ' + PZ.stage.rms_cm + ' cm · ' + PZ.pieces.length + ' pieces, ' + PZ.scenery + ' scenery parts left out' + (floats.length ? ' · ' + floats.length + ' piece' + (floats.length > 1 ? 's float' : ' floats') + ' on nothing' : '') + ' · built in ' + PZ.seconds + ' s, 0 tokens';
+    $('pzPieces').innerHTML = PZ.pieces.map(p => {
+      const what = p.kind === 'subject' ? 'subject' : p.kind === 'floating' ? '<span class="warn">floating</span>' : 'on the stage';
+      const rest = p.rests_on === 'stage' ? 'the stage' : p.rests_on === 'nothing' ? '<span class="warn">nothing: it floats ' + p.stands.up + ' cm up</span>' : 'P' + p.rests_on;
+      const am = p.am ? Object.entries(p.am.numbers).map(([k, v]) => '<span class="chip ' + (v.rule === 'CANNOT' ? 'cannot' : 'ok') + '" title="' + esc(v.rule === 'CANNOT' ? 'no rule within ± ' + v.band : k + '(t) = ' + v.formula + '  ± ' + v.band) + '">' + NAMES[k] + ': ' + (v.rule === 'CANNOT' ? 'CANNOT' : v.rule + ' ' + v.kept + '/' + v.measured) + '</span>').join('')
+        : '<span class="muted">not tracked by AM\'s eyes through the clip</span>';
+      return '<tr data-p="' + p.id + '"' + (pzSel === p.id ? ' class="sel"' : '') + '><td><button class="pick" type="button"><span class="swatch" style="background:' + pzCol(p.id) + '"></span>P' + p.id + '</button> <span class="muted">' + what + '</span>' + (p.am ? '<br><span class="muted">AM object #' + p.am.object + ', ' + p.am.frames + ' frames</span>' : '') + '</td><td class="mono">across ' + p.stands.across + '<br>forward ' + p.stands.forward + '<br>up ' + p.stands.up + '</td><td class="mono">' + p.size.across + ' across<br>' + p.size.forward_seen + ' deep (seen)<br>' + p.size.up + ' tall</td><td>' + rest + '</td><td><div class="chips">' + am + '</div></td></tr>';
+    }).join('');
+    const fmt = (v, pos, neg) => Math.abs(v).toFixed(1) + ' cm ' + (v >= 0 ? pos : neg);
+    const rel = PZ.relations.filter(r => r.a === pzSel || r.b === pzSel).map(r => {
+      const o = r.a === pzSel ? r.b : r.a, k = r.a === pzSel ? 1 : -1;
+      return 'P' + o + ' is ' + fmt(k * r.across, 'to the right', 'to the left') + ', ' + fmt(k * r.forward, 'farther', 'nearer') + ', ' + fmt(k * r.up, 'higher', 'lower') + ' (' + r.apart + ' cm apart)';
+    });
+    $('pzRel').textContent = pzSel ? 'From P' + pzSel + ': ' + (rel.join(' · ') || 'no other pieces') + '.' : '';
+    drawPuzzle2d(); pzDirty = true; styleP3();
+  }
+  function drawPuzzle2d() {
+    const cv = $('pz2d'), W = cv.clientWidth, H = cv.clientHeight, d = devicePixelRatio;
+    if (!PZ || !pzFrame || !W || !H) return;
+    if (cv.width !== Math.round(W * d) || cv.height !== Math.round(H * d)) { cv.width = Math.round(W * d); cv.height = Math.round(H * d); }
+    const g = cv.getContext('2d'); g.setTransform(d, 0, 0, d, 0, 0);
+    g.drawImage(pzFrame, 0, 0, W, H);
+    if (pzOverlaySel !== pzSel || !pzOverlay) {
+      const [w, h] = PZ.size, oc = document.createElement('canvas'); oc.width = w; oc.height = h;
+      const og = oc.getContext('2d'), im = og.createImageData(w, h), rgb = {};
+      PZ.pieces.forEach(p => { rgb[p.id] = hexRgb(pzCol(p.id)); });
+      for (let i = 0; i < pzIds.length; i++) {
+        const id = pzIds[i];
+        if (!id || !rgb[id]) { im.data[4 * i + 3] = 120; continue; }
+        im.data[4 * i] = rgb[id][0]; im.data[4 * i + 1] = rgb[id][1]; im.data[4 * i + 2] = rgb[id][2]; im.data[4 * i + 3] = id === pzSel ? 150 : 80;
+      }
+      og.putImageData(im, 0, 0); pzOverlay = oc; pzOverlaySel = pzSel;
+    }
+    g.drawImage(pzOverlay, 0, 0, W, H);
+    const sx = W / PZ.size[0], sy = H / PZ.size[1];
+    g.font = '600 11.5px ' + TOK['--font-data']; g.textBaseline = 'middle';
+    PZ.pieces.forEach(p => {
+      const [x, y] = p.box, a = 'P' + p.id + ' · ' + p.distance_cm.toFixed(0) + ' cm away';
+      const b = p.rests_on === 'stage' ? 'on the stage' : p.rests_on === 'nothing' ? 'floats ' + p.stands.up + ' cm up' : 'on P' + p.rests_on;
+      tagOn(g, x * sx, y * sy, a, b, p.rests_on === 'nothing' ? '#c2412d' : '#15804d', pzCol(p.id));
+    });
+  }
+  function tagOn(g, x, y, a, b, pill, col) {
+    const wa = g.measureText(a).width + 13, wb = g.measureText(b).width + 12, ly = Math.max(0, y - 20);
+    g.fillStyle = 'rgba(0,0,0,0.78)'; g.fillRect(x, ly, wa, 20);
+    g.fillStyle = col; g.fillRect(x, ly, 3, 20);
+    g.fillStyle = '#fff'; g.fillText(a, x + 8, ly + 10.5);
+    g.fillStyle = pill; g.fillRect(x + wa, ly, wb, 20);
+    g.fillStyle = '#fff'; g.fillText(b, x + wa + 6, ly + 10.5);
+  }
+  $('pz2d').addEventListener('click', e => {
+    if (!PZ || !pzIds) return;
+    const rc = e.currentTarget.getBoundingClientRect();
+    const x = Math.floor((e.clientX - rc.left) * PZ.size[0] / rc.width), y = Math.floor((e.clientY - rc.top) * PZ.size[1] / rc.height);
+    const id = pzIds[y * PZ.size[0] + x];
+    if (id) { pzSel = id; renderPuzzle(); }
+  });
+  $('pzPieces').addEventListener('click', e => { const tr = e.target.closest('tr[data-p]'); if (tr) { pzSel = +tr.dataset.p; renderPuzzle(); } });
+  new ResizeObserver(() => drawPuzzle2d()).observe($('pz2d'));
+
+  // the board in 3D: x across, y up, -z forward (the camera looks down -z), all in centimetres
+  function initPz3() {
+    const canvas = $('pz3d');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setPixelRatio(Math.min(2, devicePixelRatio)); renderer.setClearColor(0x0b0e0d);
+    const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(45, 16 / 9, 1, 6000);
+    const orbit = { theta: 0.55, phi: 1.05, r: 320, target: new THREE.Vector3(0, 10, -120) };
+    const place = () => { const o = orbit; cam.position.set(o.target.x + o.r * Math.sin(o.phi) * Math.sin(o.theta), o.target.y + o.r * Math.cos(o.phi), o.target.z + o.r * Math.sin(o.phi) * Math.cos(o.theta)); cam.lookAt(o.target); pzDirty = true; };
+    let drag = null;
+    canvas.addEventListener('pointerdown', e => { drag = [e.clientX, e.clientY]; canvas.setPointerCapture(e.pointerId); canvas.style.cursor = 'grabbing'; });
+    canvas.addEventListener('pointerup', () => { drag = null; canvas.style.cursor = 'grab'; });
+    canvas.addEventListener('pointermove', e => { if (!drag) return; orbit.theta -= (e.clientX - drag[0]) * 0.006; orbit.phi = Math.min(1.55, Math.max(0.1, orbit.phi - (e.clientY - drag[1]) * 0.006)); drag = [e.clientX, e.clientY]; place(); });
+    canvas.addEventListener('wheel', e => { e.preventDefault(); orbit.r = Math.min(2000, Math.max(40, orbit.r * (1 + e.deltaY * 0.001))); place(); }, { passive: false });
+    canvas.addEventListener('dblclick', () => pzHome());
+    const resize = () => { const w = canvas.clientWidth, h = canvas.clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); pzDirty = true; };
+    new ResizeObserver(resize).observe(canvas); resize();
+    return { renderer, scene, cam, orbit, place, boxes: {} };
+  }
+  function pzHome() {
+    if (!pz3 || !PZ) return;
+    const xs = PZ.pieces.map(p => p.stands.across), zs = PZ.pieces.map(p => p.stands.forward);
+    const cx = xs.length ? (Math.min(...xs) + Math.max(...xs)) / 2 : 0, cz = zs.length ? (Math.min(...zs) + Math.max(...zs)) / 2 : 120;
+    Object.assign(pz3.orbit, { theta: 0.55, phi: 1.05, r: Math.max(220, 1.6 * Math.max(Math.max(...xs.map(Math.abs), 50), Math.max(...zs, 100))), target: new THREE.Vector3(cx / 2, 10, -cz) });
+    pz3.place();
+  }
+  function buildPz3() {
+    if (!PZ || typeof THREE === 'undefined') return;
+    try { if (!pz3) pz3 = initPz3(); } catch (e) { return; }
+    const S = pz3.scene;
+    dispose(S); while (S.children.length) S.remove(S.children[0]);
+    const zs = PZ.pieces.map(p => p.stands.forward), xs = PZ.pieces.map(p => p.stands.across);
+    const far = Math.max(150, ...zs.map(z => z + 40)), wide = Math.max(100, ...xs.map(x => Math.abs(x) + 40));
+    const size = 2 * Math.ceil(Math.max(far, wide) / 20) * 20;
+    const grid = new THREE.GridHelper(size, size / 10, 0x3c5a4a, 0x1e2925); grid.position.set(0, 0, -size / 2 + 20); S.add(grid);
+    const plane = new THREE.Mesh(new THREE.PlaneGeometry(size, size), new THREE.MeshBasicMaterial({ color: 0x2b4a3b, transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false }));
+    plane.rotation.x = -Math.PI / 2; plane.position.set(0, 0, -size / 2 + 20); S.add(plane);
+    const h = PZ.camera.height, tau = PZ.camera.tilt_down * Math.PI / 180, f = PZ.lens.f, lx = PZ.lens.cx, ly = PZ.lens.cy, D = 45;
+    const apex = new THREE.Vector3(0, h, 0), fwd = new THREE.Vector3(0, -Math.sin(tau), -Math.cos(tau)), up = new THREE.Vector3(0, Math.cos(tau), -Math.sin(tau)), right = new THREE.Vector3(1, 0, 0);
+    const corners = [[-lx, -ly], [lx, -ly], [lx, ly], [-lx, ly]].map(([u, v]) => apex.clone().add(right.clone().multiplyScalar(u / f * D)).add(up.clone().multiplyScalar(-v / f * D)).add(fwd.clone().multiplyScalar(D)));
+    const wedge = []; corners.forEach((c, i) => { wedge.push(apex, c, c, corners[(i + 1) % 4]); });
+    S.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(wedge), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 })));
+    const pole = new THREE.Line(new THREE.BufferGeometry().setFromPoints([apex, new THREE.Vector3(0, 0, 0)]), new THREE.LineDashedMaterial({ color: 0xffffff, dashSize: 2, gapSize: 2 }));
+    pole.computeLineDistances(); S.add(pole);
+    const camTag = sprite('camera ' + h + ' cm up', '#ffffff', true); camTag.position.set(0, h + 10, 0); S.add(camTag);
+    pz3.boxes = {};
+    PZ.pieces.forEach(p => {
+      const col = new THREE.Color(pzCol(p.id)), sz = [Math.max(1, p.size.across), Math.max(1, p.size.up), Math.max(1, p.size.forward_seen)];
+      const pos = new THREE.Vector3(p.stands.across, Math.max(0, p.stands.up) + sz[1] / 2, -p.stands.forward);
+      const geo = new THREE.BoxGeometry(sz[0], sz[1], sz[2]);
+      const body = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.3, depthWrite: false }));
+      const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: p.rests_on === 'nothing' ? 0xff4a3a : col }));
+      body.position.copy(pos); edges.position.copy(pos); S.add(body, edges);
+      const tag = sprite('P' + p.id, pzCol(p.id)); tag.position.set(pos.x, pos.y + sz[1] / 2 + 8, pos.z); S.add(tag);
+      if (p.rests_on === 'nothing') {
+        const drop = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(pos.x, p.stands.up, pos.z), new THREE.Vector3(pos.x, 0, pos.z)]), new THREE.LineDashedMaterial({ color: 0xff4a3a, dashSize: 3, gapSize: 2 }));
+        drop.computeLineDistances(); S.add(drop);
+      }
+      pz3.boxes[p.id] = { body, edges };
+    });
+    pzHome(); styleP3();
+  }
+  function styleP3() {
+    if (!pz3) return;
+    Object.entries(pz3.boxes).forEach(([id, b]) => { const on = +id === pzSel; b.body.material.opacity = on ? 0.55 : 0.22; });
+    pzDirty = true;
+  }
+
+  // ---------- maps and jobs
+  let mapsSeen = '';
+  async function listMaps(current) {
+    const maps = await (await fetch('/api/maps')).json(), key = JSON.stringify(maps), keep = current || $('maps').value;
+    if (key !== mapsSeen) {
+      mapsSeen = key;
+      $('maps').innerHTML = maps.map(m => '<option value="' + esc(m.id) + '">' + esc(m.name) + '</option>').join('');
+    }
+    if (keep) $('maps').value = keep;
+    return maps;
+  }
+  setInterval(() => { if (document.activeElement !== $('maps')) listMaps().catch(() => {}); }, 10000);   // maps built elsewhere appear too
+  async function getJSON(url) { const r = await fetch(url); if (!r.ok) throw new Error('the app answered ' + r.status); return r.json(); }
+  async function loadExtension(id) {
+    try { E = await getJSON('/maps/' + encodeURIComponent(id) + '/extend.json'); } catch (e) { E = null; }
+    if (E && E.clip_frames !== M.frames) E = null;
+    if (E) $('extSec').value = String(E.seconds);
+    if (ext !== null && !inExt(ext)) ext = null;
+    timelineBar(); renderExt(); buildExtTrails(); if (sel !== null) buildCharts(); lastT = -1;
+  }
+  async function loadMap(id) {
+    if (!id) return;
+    status('Loading the map…');
+    let m;
+    try { m = await getJSON('/maps/' + encodeURIComponent(id) + '/map.json'); }
+    catch (e) { status('That map could not be loaded: ' + e.message + '. Pick another one, or map the video again.'); return; }
+    m.objects.forEach(o => NUM.forEach(k => { o.numbers[k].brokenSet = new Set(o.numbers[k].broken || []); }));
+    CAMK.forEach(k => { m.camera[k].brokenSet = new Set(m.camera[k].broken || []); });
+    stopPlay(); ext = null;
+    M = m; E = null; mapId = id; byId = {}; M.objects.forEach(o => { byId[o.id] = o; });
+    vid.src = '/maps/' + id + '/clip.mp4'; vid.loop = false; vid.load();
+    $('eyesStage').style.aspectRatio = M.size[0] + ' / ' + M.size[1];
+    slider.value = 0; shownT = 0; lastT = -1;
+    const ruledOf = o => NUM.filter(k => o.numbers[k].rule !== 'CANNOT').length;
+    const ranked = M.objects.slice().sort((a, b) => ruledOf(b) - ruledOf(a) || b.rows.length - a.rows.length);
+    sel = ranked.length ? ranked[0].id : 'camera';
+    steps(); buildTable(); build3d();
+    timelineBar();
+    loadPuzzle(id);
+    const name = $('maps').selectedOptions[0] ? $('maps').selectedOptions[0].textContent : id;
+    status(name + ': ' + M.frames + ' frames at ' + M.fps + ' fps, ' + M.objects.length + ' objects. Mapped in ' + M.total_wall + ' s on this Mac, about $' + M.cost_usd + ', no tokens.' + (E ? ' Extended by AM: ' + E.seconds + ' s.' : ''));
+  }
+  async function poll(jid, onDone, words) {
+    let s;
+    try { s = await getJSON('/api/status/' + jid); }
+    catch (e) { status('Lost contact with the AM Map app. Check that it is still running, then reload.'); return; }
+    if (s.error) { status('AM could not finish: ' + s.error); $('extGo').disabled = false; return; }
+    if (s.done) return onDone();
+    if (words === 'map') stepsWhileMapping(s.stage);
+    status(({ 'puzzle-eyes': "AM's puzzle: lifting the pieces out of the last frame…", 'puzzle-stage': "AM's puzzle: fitting the stage and the camera…", 'puzzle-pieces': "AM's puzzle: cutting the pieces apart…", 'puzzle-relations': "AM's puzzle: what rests on what…", queued: 'Waiting for the job before it to finish…', eyes: "Step 1: AM's eyes are boxing every object…", lift: "Steps 2 to 5: lifting to 3D, shared memory, AM's core reasoner and sweep. About 2 minutes per 5 s of video.", scene: 'Step 6: mapping the room…', proof: 'AM is answering frames hidden from it, to prove it generalises on this video…', extend: 'AM is reasoning past the last frame: the math for the extension…' })[s.stage] || 'Working…');
+    setTimeout(() => poll(jid, onDone, words), 1500);
+  }
+  async function mapFile(file) {
+    status('Sending ' + file.name + ' to AM on this Mac…');
+    const r = await fetch('/api/map?kind=' + $('kind').value, { method: 'POST', headers: { 'Content-Type': 'video/mp4', 'X-Name': encodeURIComponent(file.name) }, body: file });
+    const j = await r.json();
+    if (j.error) { status(j.error); return; }
+    poll(j.id, async () => { await listMaps(j.id); loadMap(j.id); }, 'map');
+  }
+  async function extendNow() {
+    if (!M) return;
+    $('extGo').disabled = true;
+    const id = mapId;
+    try {
+      const j = await (await fetch('/api/extend/' + encodeURIComponent(id) + '?seconds=' + $('extSec').value, { method: 'POST' })).json();
+      if (j.error) throw new Error(j.error);
+      poll(j.id, async () => { $('extGo').disabled = false; if (mapId === id) { await loadExtension(id); status('AM extended the map by ' + E.seconds + ' s.'); } }, 'extend');
+    } catch (e) { $('extGo').disabled = false; status('Could not start the extension: ' + e.message); }
+  }
+
+  $('file').addEventListener('change', e => { if (e.target.files[0]) mapFile(e.target.files[0]); e.target.value = ''; });
+  $('maps').addEventListener('change', () => loadMap($('maps').value));
+  $('play').addEventListener('click', () => { if (!M) return; if (playing) stopPlay(); else startPlay(); });
+  slider.addEventListener('input', () => { if (M) seek(Number(slider.value)); });
+  listMaps().then(maps => { if (maps.length) loadMap(maps[0].id); else status('Map a video to begin.'); })
+    .catch(() => status('The AM Map app is not answering. Start it with: python3 map_app.py'));
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>

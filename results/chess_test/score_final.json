@@ -1,0 +1,29 @@
+{
+ "test": "FINAL: AM's numbers sealed before generation, every frame measured against them and against the board",
+ "seal": "e9c256d12ac8d464a3ddda02525f28871180ffb5a954e94284432656543083ab",
+ "seal_verified": true,
+ "move": "dark pawn on 3,4 slides by itself to 3,3 between 0.5 and 1.5 s (no cat, no lift)",
+ "generator": "Kling 4.0 Edit (ElevenLabs), one take, output 4.04 s at 24 fps, 1280x720",
+ "rule_fixed_before": "within 5 px of AM's sealed position at every frame (854x480 scale) and ends on 3,3",
+ "result": {
+  "frames": 97,
+  "median_px": 1.7,
+  "worst_px_within_sealed_clip": 3.4,
+  "end_px": 1.5,
+  "end_square": "3,3",
+  "timing": "moves 0.5-1.5 s as sealed",
+  "after_3_5s": "detector read 8.1 px, but pixel alignment shows the pawn shifted 0 px from 3.0 s to 4.0 s: a highlight artifact"
+ },
+ "board": "16 still grey pawns sit within ~1 px of the original (scale 1.0009, shift 0.8, -0.6 px): the board and camera are unchanged",
+ "method": "identical head detector and window on AM's guide and Kling's output, frame for frame; the foot is hidden behind the grey pawn at the end",
+ "verdict": "PASS",
+ "price": {
+  "am_compute_s": 165.5,
+  "am_compute_usd": 0.0014,
+  "tokens": 0,
+  "kling_take_credits": "about 5,245 (1,730/s x 3.03 s)",
+  "kling_take_usd": "about 1.05 at $0.0002 per credit",
+  "per_exact_shot_usd": "about 1.05",
+  "earlier_takes_this_shot": "FLUX ~455 + Kling ~5,245 + Kling ~5,245 credits = about $2.19, none passed the rule"
+ }
+}

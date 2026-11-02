@@ -1,0 +1,46 @@
+{
+ "seal": "14de6e998d9e32da6295429e4064c8e06a17ac9eca5b2de386479ad3c52a0893",
+ "seal_verified": true,
+ "generator": "FLUX 3 Edit (ElevenLabs), one take, 2.54 s at 24 fps, 1248x704",
+ "board": {
+  "output_grid_N": 5,
+  "output_grid_agreement": 0.9575,
+  "corners_vs_sealed_px": "within 5-9 px"
+ },
+ "pawn": {
+  "am_start": [
+   3.2367,
+   4.4161
+  ],
+  "am_end": [
+   3.2367,
+   3.4161
+  ],
+  "am_end_square": [
+   3,
+   3
+  ],
+  "output_start": [
+   2.52,
+   3.38
+  ],
+  "output_start_square": [
+   2,
+   3
+  ],
+  "output_end": [
+   2.56,
+   1.28
+  ],
+  "output_end_square": [
+   2,
+   1
+  ],
+  "start_error_squares": 1.26,
+  "end_error_squares": 2.24,
+  "output_moved_squares": 2.1,
+  "am_moved_squares": 1.0
+ },
+ "mid_move": "not measurable: the cat's paw covers the pawn and Apple's tracker loses it (confidence 0.3-0.4)",
+ "verdict": "FAIL: the generator did not follow AM's numbers (it moved the pawn into the empty column in frame 0 and pushed it 2 squares, not 1)"
+}

@@ -1,0 +1,164 @@
+<title>AM Exact Video</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="site.css">
+
+<main>
+  <header class="stack">
+    <div class="eyebrow">AM · locked before generation, measured frame by frame</div>
+    <h1>AM Exact Video</h1>
+    <p class="lede prose">AM is a core reasoner. It turns a video into exact numbers, works out the shot you ask for as numbers for every frame, and locks them before anything is generated. A video model then paints the shot. We measured every frame of what it painted against AM's locked numbers.</p>
+    <div class="figures">
+      <div class="figure"><b>1.7 px</b><span>median distance from AM's locked numbers, 97 frames: PASS</span></div>
+      <div class="figure"><b>1.5 px</b><span>where the pawn comes to rest, on the square AM said</span></div>
+      <div class="figure"><b>$0.0014 · 0 tokens</b><span>AM's whole part of the shot, on a Mac</span></div>
+      <div class="figure"><b>about $1.05</b><span>one exact shot: one Kling 4.0 Edit take</span></div>
+    </div>
+  </header>
+
+  <section class="stack" aria-labelledby="core">
+    <h2 id="core">AM, the core reasoner</h2>
+    <div class="core">
+      <div class="stack prose">
+        <p>AM's eyes measure every object in every frame in centimetres: Apple Vision tracks it, a metric depth model gives its distance, and a stated lens (60° wide) turns pixels into 3D.</p>
+        <p>AM then reasons over those numbers. For each object's own numbers (across, up and down, depth, width, height, brightness) its hives each propose a rule: EXACT, SHAPE, REPEAT or LOCAL. AM's law takes one and proves it on every frame, or answers CANNOT. A CANNOT is part of the answer: it marks what in the clip follows no law AM can stand behind.</p>
+        <p>From that map AM builds the scene as geometry, the surface, the camera and every piece, and works out the shot you ask for as numbers for every frame, locked before any generation.</p>
+      </div>
+      <div class="stack">
+        <div class="table-wrap"><table>
+          <thead><tr><th>Clip</th><th>Numbers</th><th>Rule, proven</th><th>CANNOT</th><th>Camera</th></tr></thead>
+          <tbody>
+            <tr><td>Cats playing chess (Sora)</td><td class="n">36</td><td class="n">8</td><td class="n">28</td><td>CANNOT</td></tr>
+            <tr><td>Mouse chef (Sora)</td><td class="n">30</td><td class="n">14</td><td class="n">16</td><td>CANNOT</td></tr>
+            <tr><td>Mouse, FLUX repaint</td><td class="n">18</td><td class="n">11</td><td class="n">7</td><td>up/down and depth ruled</td></tr>
+          </tbody>
+        </table></div>
+        <p class="muted" style="font-size:0.92rem">AM's reasoning took 116 s, 80 s and 36 s on the Mac; no tokens. Sora's camera wobbles and its objects morph, so most numbers there get CANNOT.</p>
+        <dl class="facts">
+          <dt>Handed over before generation</dt><dd>for the chess shot: the 5×5 board (98.7% of 303 samples agree), seen from 13.1° above its surface; the pawn on square 3,4; and the pawn's place and size at all 91 frames, locked with sha256 e9c256d1…83ab</dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <section class="explain" aria-labelledby="how">
+    <h2 id="how">How AM's math drives the shot</h2>
+    <p class="prose">The final test: the dark pawn slides one square toward the camera, from 3,4 to 3,3, between 0.5 and 1.5 s. Left, AM's locked numbers drawn on the guide it hands the video model. Right, the same marks on what Kling 4.0 Edit painted.</p>
+    <div class="pair">
+      <figure><video src="media/chess_label_guide.mp4" poster="media/chess_label_guide_last.jpg" controls muted playsinline loop preload="metadata"></video><figcaption>Green box: AM's pawn at this frame. Green line: its locked path. Cyan: AM's board. The panel shows AM's numbers and the lens at each frame.</figcaption></figure>
+      <figure><video src="media/chess_label_kling.mp4" poster="media/chess_label_kling_last.jpg" controls muted playsinline loop preload="metadata"></video><figcaption>Amber cross: the pawn Kling painted. The panel shows its distance from AM's numbers at every frame.</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="stack" aria-labelledby="final">
+    <h2 id="final">The final test</h2>
+    <div class="result">
+      <div class="take-head"><span class="pill ok">PASS</span><p>The rule was fixed before generating: the pawn within 5 px of AM's locked position at every frame, ending on square 3,3.</p></div>
+      <div class="chart" id="chart" aria-label="Distance between the painted pawn and AM's locked position, frame by frame"></div>
+      <div class="metrics"><span class="good">median 1.7 px</span><span class="good">worst 3.4 px inside AM's 3.03 s plan</span><span class="good">at rest 1.5 px on 3,3</span><span>slide 0.5–1.5 s as locked</span><span>still pieces within ~1 px: camera and board unchanged</span></div>
+      <p class="muted" style="font-size:0.92rem">Pixels at 854×480; where the pawn stands, a board square is about 63 px wide on screen, and its one-square move is 21 px down the screen. After 3.5 s the detector reads 8 px, but pixel alignment shows the pawn did not move between 3.0 s and 4.0 s: a highlight on its head brightened. Kling also made the video a second longer than AM's plan.</p>
+      <div class="eq">s = clamp((t − 0.5) / 1.0, 0, 1)      e = 3s² − 2s³
+u = 3.24      v = 4.42 − e      w = 0                  (board squares)
+[x, y, 1] ∝ K · (u·r₁ + v·r₂ + w·r₃ + T)               (AM's lens and board)</div>
+    </div>
+  </section>
+
+  <section class="stack" aria-labelledby="takes">
+    <h2 id="takes">Every take on the chess shot</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Take</th><th>What was asked</th><th>Result</th><th>Credits</th></tr></thead>
+      <tbody>
+        <tr><td>1 · FLUX 3 Edit</td><td>the grey cat moves the pawn</td><td><span class="pill no">FAIL</span> moved the pawn to another column in its first frame; ended 2.24 squares off</td><td class="n">~455</td></tr>
+        <tr><td>2 · Kling 4.0 Edit</td><td>the grey cat moves the pawn</td><td><span class="pill no">FAIL</span> the grey cat moved a piece on its own side; 3.4 squares off</td><td class="n">~5,245</td></tr>
+        <tr><td>3 · Kling 4.0 Edit</td><td>the orange cat lifts the pawn</td><td><span class="pill part">FOLLOWS</span> median 5.9 px, up to 27 px while the paw lifts it; ends 2.9 px on 3,3</td><td class="n">~5,245</td></tr>
+        <tr><td>4 · Kling 4.0 Edit</td><td>the pawn slides by itself</td><td><span class="pill ok">PASS</span> median 1.7 px, worst 3.4 px; ends 1.5 px on 3,3</td><td class="n">~5,245</td></tr>
+      </tbody>
+    </table></div>
+    <p class="prose">Takes 1 and 2 asked the grey cat to move a pawn standing next to the orange cat. Both models made the grey cat move a piece within its own reach and ignored AM's numbers. When the ask fit the scene, the model followed AM; with nothing left to invent, it followed every frame.</p>
+  </section>
+
+  <section class="stack" aria-labelledby="cost">
+    <h2 id="cost">What it costs, measured</h2>
+    <p class="muted prose">Mac time at $0.03 an hour. Credits at the ElevenLabs Starter rate, $6 for 30,000 ($0.0002 each). Kling credits at its listed rate of 1,730 a second, not read from the account.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>The chess shot</th><th>Measured</th><th>Cost</th></tr></thead>
+      <tbody>
+        <tr><td>AM maps the clip: eyes, depth and the core reasoner</td><td class="n">149.5 s</td><td class="n">$0.0012</td></tr>
+        <tr><td>AM builds the board, works out and locks every frame, draws the guide</td><td class="n">about 16 s</td><td class="n">$0.0001</td></tr>
+        <tr><td>AM's tokens</td><td class="n">0</td><td class="n">$0</td></tr>
+        <tr><td>One Kling 4.0 Edit take of the 3.03 s guide</td><td class="n">about 5,245 credits</td><td class="n">about $1.05</td></tr>
+        <tr class="total"><td>One exact shot</td><td class="n">1 take</td><td class="n">about $1.05</td></tr>
+      </tbody>
+    </table></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>For comparison</th><th>Takes</th><th>Cost</th><th>Exact?</th></tr></thead>
+      <tbody>
+        <tr><td>Chess, before the ask and the scene agreed</td><td class="n">3</td><td class="n">about $2.19</td><td>No</td></tr>
+        <tr><td>Mouse jump, prompts only</td><td class="n">6</td><td class="n">$0.87</td><td>Never</td></tr>
+        <tr><td>Mouse jump, AM's guide + FLUX 3 Edit</td><td class="n">1</td><td class="n">about $0.15</td><td>3 px at landing</td></tr>
+      </tbody>
+    </table></div>
+    <p class="prose">AM's own part is about a tenth of a cent. The shot costs one take of the video model, because AM makes that one take land where you asked.</p>
+  </section>
+
+  <section class="stack" aria-labelledby="tests">
+    <h2 id="tests">The tests, each on its own page</h2>
+    <div class="cards">
+      <a class="card" href="chess.html"><span class="pill ok" style="justify-self:start">FINAL TEST · PASS</span><h3>Cats Playing Chess</h3><p class="muted">AM's board, all four takes with their videos and last frames, why two failed, and how every frame was measured.</p><span class="go">Open the chess test →</span></a>
+      <a class="card" href="mouse.html"><span class="pill part" style="justify-self:start">FIRST TEST</span><h3>The Mouse Jump</h3><p class="muted">A gravity-exact jump onto a plate: prompts never landed it; one take guided by AM's numbers landed 3 px off.</p><span class="go">Open the mouse test →</span></a>
+    </div>
+  </section>
+
+  <section class="stack" aria-labelledby="limits">
+    <h2 id="limits">Limits</h2>
+    <ul class="list prose">
+      <li>Two shots so far, one passing take each. AM's eyes use an assumed lens and a depth model, not a calibrated camera.</li>
+      <li>When the prompt asks for something the scene makes implausible, video models improvise and ignore AM's numbers.</li>
+      <li>The guide drawing and the scoring are code written for these tests; the painting is the video model's.</li>
+      <li>The detector resolves about 2–3 px, and reads the pawn's head because its foot hides behind the pawn in front.</li>
+    </ul>
+  </section>
+
+  <p class="muted" style="font-size:0.88rem">Measured 2 November 2026 on a Mac, with ElevenLabs (FLUX 3 Edit, Kling 4.0 Edit, Veo 3.1 Lite). Source clips: Sora videos from the Rapidata text-2-video human feedback set (Apache-2.0).</p>
+</main>
+
+<script>
+(function () {
+  const data = [[0.0, 2.39], [0.042, 2.39], [0.083, 2.39], [0.125, 2.39], [0.167, 2.39], [0.208, 2.39], [0.25, 2.39], [0.292, 2.39], [0.333, 2.39], [0.375, 2.39], [0.417, 2.39], [0.458, 2.39], [0.5, 2.39], [0.542, 2.39], [0.583, 2.39], [0.625, 3.27], [0.667, 3.39], [0.708, 1.99], [0.75, 1.8], [0.792, 1.01], [0.833, 1.02], [0.875, 1.35], [0.917, 2.45], [0.958, 2.39], [1.0, 2.19], [1.042, 1.69], [1.083, 1.12], [1.125, 2.34], [1.167, 2.41], [1.208, 3.43], [1.25, 3.39], [1.292, 3.39], [1.333, 2.68], [1.375, 3.1], [1.417, 2.31], [1.458, 3.22], [1.5, 2.09], [1.542, 1.22], [1.583, 1.41], [1.625, 1.6], [1.667, 1.6], [1.708, 1.6], [1.75, 1.6], [1.792, 1.6], [1.833, 1.6], [1.875, 1.59], [1.917, 1.6], [1.958, 1.69], [2.0, 1.69], [2.042, 1.69], [2.083, 1.69], [2.125, 1.69], [2.167, 1.69], [2.208, 1.69], [2.25, 1.69], [2.292, 1.69], [2.333, 1.69], [2.375, 1.49], [2.417, 1.33], [2.458, 1.33], [2.5, 1.33], [2.542, 1.33], [2.583, 1.33], [2.625, 1.33], [2.667, 1.33], [2.708, 1.49], [2.75, 1.49], [2.792, 1.49], [2.833, 1.49], [2.875, 1.49], [2.917, 1.49], [2.958, 1.49], [3.0, 1.49], [3.042, 1.49], [3.083, 1.49], [3.125, 1.49], [3.167, 1.49], [3.208, 1.49], [3.25, 1.49], [3.292, 1.49], [3.333, 1.49], [3.375, 1.49], [3.417, 1.49], [3.458, 1.49], [3.5, 8.07], [3.542, 8.07], [3.583, 8.07], [3.625, 8.07], [3.667, 8.07], [3.708, 8.07], [3.75, 8.07], [3.792, 8.07], [3.833, 8.07], [3.875, 8.07], [3.917, 8.07], [3.958, 8.07], [4.0, 8.07]];
+  const box = document.getElementById("chart");
+  const W = 960, H = 280, L = 46, R = 14, T = 18, B = 38, xmax = 4.1, ymax = 10;
+  const X = t => L + (t / xmax) * (W - L - R), Y = v => T + (1 - v / ymax) * (H - T - B);
+  const ns = "http://www.w3.org/2000/svg", css = { fill: 1, stroke: 1, "font-family": 1 };
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("role", "img");
+  svg.setAttribute("aria-label", "Distance from AM's locked numbers over time; under the 5 px line for the whole plan");
+  const el = (tag, attrs, text) => { const e = document.createElementNS(ns, tag); for (const k in attrs) { if (css[k]) e.style.setProperty(k, attrs[k]); else e.setAttribute(k, attrs[k]); } if (text != null) e.textContent = text; svg.appendChild(e); return e; };
+  const label = { fill: "var(--muted)", "font-size": 12, "font-family": "var(--font-data)" };
+  el("rect", { x: X(0.5), y: T, width: X(1.5) - X(0.5), height: H - T - B, fill: "var(--band)" });
+  el("text", { x: (X(0.5) + X(1.5)) / 2, y: T + 14, "text-anchor": "middle", ...label }, "the slide");
+  el("rect", { x: X(3.5), y: T, width: X(4.04) - X(3.5), height: H - T - B, fill: "var(--artifact)" });
+  el("text", { x: (X(3.5) + X(4.04)) / 2, y: T + 14, "text-anchor": "middle", ...label }, "detector artifact");
+  for (const v of [0, 5, 10]) {
+    el("line", { x1: L, x2: W - R, y1: Y(v), y2: Y(v), stroke: "var(--rule)", "stroke-width": 1 });
+    el("text", { x: L - 8, y: Y(v) + 4, "text-anchor": "end", ...label }, v + " px");
+  }
+  for (const t of [0, 1, 2, 3, 4]) el("text", { x: X(t), y: H - B + 20, "text-anchor": "middle", ...label }, t + " s");
+  el("line", { x1: L, x2: W - R, y1: Y(5), y2: Y(5), stroke: "var(--miss)", "stroke-width": 1.5, "stroke-dasharray": "6 5" });
+  el("text", { x: W - R, y: Y(5) - 6, "text-anchor": "end", fill: "var(--miss)", "font-size": 12, "font-family": "var(--font-data)" }, "pass line, 5 px");
+  el("path", { d: data.map((p, i) => (i ? "L" : "M") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1)).join(" "), fill: "none", stroke: "var(--accent)", "stroke-width": 2, "stroke-linejoin": "round" });
+  const dot = el("circle", { r: 5, fill: "var(--accent)", stroke: "var(--surface)", "stroke-width": 2, opacity: 0 });
+  const hit = el("rect", { x: L, y: T, width: W - L - R, height: H - T - B, fill: "transparent" });
+  box.appendChild(svg);
+  const tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true; box.appendChild(tip);
+  hit.addEventListener("pointermove", e => {
+    const r = svg.getBoundingClientRect(), t = ((e.clientX - r.left) / r.width * W - L) / (W - L - R) * xmax;
+    const p = data.reduce((a, b) => Math.abs(b[0] - t) < Math.abs(a[0] - t) ? b : a);
+    dot.setAttribute("cx", X(p[0])); dot.setAttribute("cy", Y(p[1])); dot.setAttribute("opacity", 1);
+    tip.hidden = false; tip.textContent = p[0].toFixed(2) + " s · " + p[1].toFixed(1) + " px" + (p[0] >= 3.5 ? " (artifact; true 1.5 px)" : "");
+    tip.style.left = (X(p[0]) / W * r.width) + "px"; tip.style.top = (Y(p[1]) / H * r.height) + "px";
+  });
+  hit.addEventListener("pointerleave", () => { tip.hidden = true; dot.setAttribute("opacity", 0); });
+})();
+</script>

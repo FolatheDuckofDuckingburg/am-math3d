@@ -1,0 +1,3 @@
+FLUX 3 Edit (video edit), input video: mouse_onto_plate_guide_1280x720.mp4
+
+Keep everything exactly where it is in every frame: the mouse's position, size and timing, the camera, the kitchen and every object. Only make the mouse look naturally alive: real fur, a natural crouch in the frying pan, a natural leap through the air, and a soft landing standing on the plate of tomatoes. Keep its white chef hat on its head the whole time. Where the mouse has left the frying pan, show the empty black pan. Do not add, move or remove anything else.

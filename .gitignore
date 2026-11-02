@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+am/video_eyes
+am/libam_eyes.dylib
+math3d/track_from
+math3d/subject_mask
+math3d/instances
+math3d/out/
+.DS_Store
+# maps the app builds stay on this Mac; the Sora sample's map ships
+maps/*
+!maps/sample/
+maps/sample/build.log
+!maps/sora_206/
+maps/sora_206/build.log
+results/chess_test/rerun/
+*.tmp

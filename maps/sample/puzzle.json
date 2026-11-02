@@ -1,0 +1,342 @@
+{
+ "clip": "clip.mp4",
+ "frame": 149,
+ "time": 4.967,
+ "size": [
+  854,
+  480
+ ],
+ "lens": {
+  "f": 739.5856948319108,
+  "cx": 427.0,
+  "cy": 240.0,
+  "fov": 60.0
+ },
+ "depth_model": "indoor",
+ "camera": {
+  "height": 27.7,
+  "tilt_down": 3.8
+ },
+ "stage": {
+  "normal": [
+   -0.0057,
+   -0.9977,
+   -0.0671
+  ],
+  "offset": 27.65,
+  "inliers": 0.356,
+  "rms_cm": 0.63,
+  "axes": {
+   "across": [
+    1.0,
+    -0.0057,
+    -0.0004
+   ],
+   "forward": [
+    0.0,
+    -0.0671,
+    0.9977
+   ],
+   "origin": [
+    0.16,
+    27.59,
+    1.86
+   ]
+  }
+ },
+ "pieces": [
+  {
+   "id": 1,
+   "kind": "subject",
+   "stands": {
+    "across": -1.2,
+    "forward": 101.1,
+    "up": 6.4
+   },
+   "size": {
+    "across": 25.6,
+    "forward_seen": 36.3,
+    "up": 39.1
+   },
+   "top": 45.5,
+   "rests_on": 4,
+   "distance_cm": 126.0,
+   "box": [
+    334,
+    70,
+    191,
+    293
+   ],
+   "area": 31428,
+   "am": {
+    "object": 5,
+    "overlap": 0.5,
+    "frames": 80,
+    "numbers": {
+     "rX": {
+      "rule": "CANNOT",
+      "band": 5.95,
+      "measured": 80
+     },
+     "rY": {
+      "rule": "CANNOT",
+      "band": 4.13,
+      "measured": 80
+     },
+     "rZ": {
+      "rule": "REPEAT",
+      "formula": "table[t mod 23]",
+      "kept": 49,
+      "measured": 80,
+      "band": 34.09
+     },
+     "W": {
+      "rule": "CANNOT",
+      "band": 13.21,
+      "measured": 80
+     },
+     "H": {
+      "rule": "CANNOT",
+      "band": 13.21,
+      "measured": 80
+     },
+     "oB": {
+      "rule": "REPEAT",
+      "formula": "table[t mod 23]",
+      "kept": 51,
+      "measured": 80,
+      "band": 14.12
+     }
+    }
+   }
+  },
+  {
+   "id": 2,
+   "kind": "thing",
+   "stands": {
+    "across": 75.2,
+    "forward": 177.0,
+    "up": 1.7
+   },
+   "size": {
+    "across": 21.3,
+    "forward_seen": 33.1,
+    "up": 6.8
+   },
+   "top": 8.5,
+   "rests_on": "stage",
+   "distance_cm": 190.1,
+   "box": [
+    695,
+    252,
+    85,
+    55
+   ],
+   "area": 2892,
+   "am": null
+  },
+  {
+   "id": 3,
+   "kind": "thing",
+   "stands": {
+    "across": 26.4,
+    "forward": 138.0,
+    "up": 1.8
+   },
+   "size": {
+    "across": 46.6,
+    "forward_seen": 63.4,
+    "up": 5.2
+   },
+   "top": 7.1,
+   "rests_on": "stage",
+   "distance_cm": 150.4,
+   "box": [
+    485,
+    258,
+    183,
+    93
+   ],
+   "area": 6388,
+   "am": null
+  },
+  {
+   "id": 4,
+   "kind": "thing",
+   "stands": {
+    "across": -6.8,
+    "forward": 96.3,
+    "up": 2.0
+   },
+   "size": {
+    "across": 34.5,
+    "forward_seen": 12.8,
+    "up": 10.3
+   },
+   "top": 12.4,
+   "rests_on": "stage",
+   "distance_cm": 98.6,
+   "box": [
+    192,
+    292,
+    313,
+    100
+   ],
+   "area": 9020,
+   "am": {
+    "object": 7,
+    "overlap": 0.37,
+    "frames": 40,
+    "numbers": {
+     "rX": {
+      "rule": "CANNOT",
+      "band": 4.13,
+      "measured": 40
+     },
+     "rY": {
+      "rule": "CANNOT",
+      "band": 2.32,
+      "measured": 40
+     },
+     "rZ": {
+      "rule": "REPEAT",
+      "formula": "table[t mod 2]",
+      "kept": 26,
+      "measured": 40,
+      "band": 9.58
+     },
+     "W": {
+      "rule": "REPEAT",
+      "formula": "table[t mod 15]",
+      "kept": 33,
+      "measured": 40,
+      "band": 4.13
+     },
+     "H": {
+      "rule": "REPEAT",
+      "formula": "table[t mod 2]",
+      "kept": 33,
+      "measured": 40,
+      "band": 4.13
+     },
+     "oB": {
+      "rule": "CANNOT",
+      "band": 5.95,
+      "measured": 40
+     }
+    }
+   }
+  },
+  {
+   "id": 5,
+   "kind": "thing",
+   "stands": {
+    "across": 41.6,
+    "forward": 108.8,
+    "up": 1.7
+   },
+   "size": {
+    "across": 16.8,
+    "forward_seen": 12.2,
+    "up": 2.4
+   },
+   "top": 4.0,
+   "rests_on": "stage",
+   "distance_cm": 110.2,
+   "box": [
+    623,
+    330,
+    164,
+    51
+   ],
+   "area": 5392,
+   "am": null
+  }
+ ],
+ "relations": [
+  {
+   "a": 1,
+   "b": 2,
+   "across": 76.4,
+   "forward": 75.9,
+   "up": -4.7,
+   "apart": 107.8
+  },
+  {
+   "a": 1,
+   "b": 3,
+   "across": 27.6,
+   "forward": 36.9,
+   "up": -4.6,
+   "apart": 46.3
+  },
+  {
+   "a": 1,
+   "b": 4,
+   "across": -5.6,
+   "forward": -4.8,
+   "up": -4.4,
+   "apart": 8.6
+  },
+  {
+   "a": 1,
+   "b": 5,
+   "across": 42.8,
+   "forward": 7.7,
+   "up": -4.7,
+   "apart": 43.7
+  },
+  {
+   "a": 2,
+   "b": 3,
+   "across": -48.8,
+   "forward": -39.0,
+   "up": 0.1,
+   "apart": 62.5
+  },
+  {
+   "a": 2,
+   "b": 4,
+   "across": -82.0,
+   "forward": -80.7,
+   "up": 0.3,
+   "apart": 115.1
+  },
+  {
+   "a": 2,
+   "b": 5,
+   "across": -33.6,
+   "forward": -68.2,
+   "up": 0.0,
+   "apart": 76.0
+  },
+  {
+   "a": 3,
+   "b": 4,
+   "across": -33.2,
+   "forward": -41.7,
+   "up": 0.2,
+   "apart": 53.3
+  },
+  {
+   "a": 3,
+   "b": 5,
+   "across": 15.2,
+   "forward": -29.2,
+   "up": -0.1,
+   "apart": 32.9
+  },
+  {
+   "a": 4,
+   "b": 5,
+   "across": 48.4,
+   "forward": 12.5,
+   "up": -0.3,
+   "apart": 50.0
+  }
+ ],
+ "scenery": 3,
+ "seconds": 6.2,
+ "cost_usd": 5.2e-05,
+ "tokens": 0
+}

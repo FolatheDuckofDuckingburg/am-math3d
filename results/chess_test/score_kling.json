@@ -1,0 +1,9 @@
+{
+ "seal": "29fad5aa52dbc55f611426e62d60654cf8036c0fa2b91d7fa2e3830df9501099",
+ "seal_verified": true,
+ "generator": "Kling 4.0 Edit (ElevenLabs), one take, 4.04 s at 24 fps, 1280x720 (guide was 3.03 s)",
+ "start": "frame 0 keeps the dark pawn on 3,4 where AM put it",
+ "end": "the grey cat moves a piece from its own side; a dark pawn ends on square 2,0 at about (2.4, 0.1), 3.4 squares from AM's 3,3",
+ "board": "Kling redrew the board slightly: AM's sealed grid no longer sits on its squares; am_grid.fit fails on its frames",
+ "verdict": "FAIL: the generator did not follow AM's numbers"
+}

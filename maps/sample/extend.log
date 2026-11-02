@@ -1,0 +1,13 @@
+proof
+extend
+done
+PROOF: the last 50 frames hidden from AM (from frame 100); objects [4, 5], camera
+  asked 750 number-frames: AM answered 0 (right 0, wrong 0), CANNOT 750; holding the last value: 289 right
+  #4 {'rX': 'REPEAT 0/50 right, 0 wrong, hold 6', 'rY': 'CANNOT 0/50 right, 0 wrong, hold 29', 'rZ': 'CANNOT 0/50 right, 0 wrong, hold 28', 'W': 'SHAPE 0/50 right, 0 wrong, hold 50', 'H': 'CANNOT 0/50 right, 0 wrong, hold 49', 'oB': 'REPEAT 0/50 right, 0 wrong, hold 13'}
+  #5 {'rX': 'EXACT 0/50 right, 0 wrong, hold 1', 'rY': 'SHAPE 0/50 right, 0 wrong, hold 30', 'rZ': 'CANNOT 0/50 right, 0 wrong, hold 3', 'W': 'SHAPE 0/50 right, 0 wrong, hold 1', 'H': 'CANNOT 0/50 right, 0 wrong, hold 8', 'oB': 'EXACT 0/50 right, 0 wrong, hold 12'}
+  #camera {'mX': 'EXACT 0/50 right, 0 wrong, hold 5', 'mY': 'EXACT 0/50 right, 0 wrong, hold 50', 'mZ': 'REPEAT 0/50 right, 0 wrong, hold 4'}
+EXTENSION: frames 150-209; camera {'mX': 'CANNOT, 0 of 60 frames', 'mY': 'CANNOT, 0 of 60 frames', 'mZ': 'CANNOT, 0 of 60 frames'}; left before the end: [1, 2]
+  #4 {'rX': 'SHAPE, 0 of 60 frames', 'rY': 'CANNOT, 0 of 60 frames', 'rZ': 'SHAPE, 0 of 60 frames', 'W': 'SHAPE, 0 of 60 frames', 'H': 'EXACT, 0 of 60 frames', 'oB': 'CANNOT, 0 of 60 frames'} boxes: AM's 0, with held 60
+  #5 {'rX': 'CANNOT, 0 of 60 frames', 'rY': 'CANNOT, 0 of 60 frames', 'rZ': 'REPEAT, 0 of 60 frames', 'W': 'CANNOT, 0 of 60 frames', 'H': 'CANNOT, 0 of 60 frames', 'oB': 'REPEAT, 0 of 60 frames'} boxes: AM's 0, with held 60
+  #7 {'rX': 'CANNOT, 0 of 60 frames', 'rY': 'CANNOT, 0 of 60 frames', 'rZ': 'REPEAT, 0 of 60 frames', 'W': 'REPEAT, 0 of 60 frames', 'H': 'REPEAT, 0 of 60 frames', 'oB': 'CANNOT, 0 of 60 frames'} boxes: AM's 0, with held 60
+time: proof 22.7 s, extension 50.4 s; about $0.00061; 0 tokens
