@@ -21,7 +21,7 @@ def parse_byte_range(value, size):
     """Return (start, end), None for an unsupported header, or False for an unsatisfiable range."""
     if not value:
         return None
-    match = re.fullmatch(r"bytes=(\\d*)-(\\d*)", value.strip())
+    match = re.fullmatch(r"bytes=(\d*)-(\d*)", value.strip())
     if not match or not any(match.groups()):
         return None
 
