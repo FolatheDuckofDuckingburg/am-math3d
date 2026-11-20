@@ -17,6 +17,29 @@ TYPES = {".json": "application/json", ".mp4": "video/mp4", ".html": "text/html; 
          ".js": "application/javascript", ".txt": "text/plain; charset=utf-8", ".sha256": "text/plain; charset=utf-8"}
 SHOT_FILES = r"plan\.json|plan\.sha256|guide\.mp4|guide_end\.png|prompt\.txt|shot\.json|take\.mp4|score\.json|labelled\.mp4"
 
+def parse_byte_range(value, size):
+    """Return (start, end), None for an unsupported header, or False for an unsatisfiable range."""
+    if not value:
+        return None
+    match = re.fullmatch(r"bytes=(\d*)-(\d*)", value.strip())
+    if not match or not any(match.groups()):
+        return None
+
+    first, last = match.groups()
+    if not first:
+        suffix = int(last)
+        if suffix <= 0 or size <= 0:
+            return False
+        return max(0, size - suffix), size - 1
+
+    start = int(first)
+    end = int(last) if last else size - 1
+    if size <= 0 or start >= size or end < start:
+        return False
+    return start, min(end, size - 1)
+
+
+
 
 def run_shot(jid, mid, q):
     def progress(stage):
@@ -138,11 +161,13 @@ class H(BaseHTTPRequestHandler):
     def _file(self, path):
         size = os.path.getsize(path)
         ctype = TYPES.get(os.path.splitext(path)[1], "application/octet-stream")
-        rng = self.headers.get("Range")
+        rng = parse_byte_range(self.headers.get("Range"), size)
         with open(path, "rb") as f:
-            if rng and (m := re.match(r"bytes=(\d*)-(\d*)", rng)):          # video seeking needs ranges
-                a = int(m.group(1)) if m.group(1) else 0
-                b = int(m.group(2)) if m.group(2) else size - 1
+            if rng is False:
+                return self._send(416, b"", ctype, {"Content-Range": "bytes */%d" % size,
+                                                    "Accept-Ranges": "bytes"})
+            if rng is not None:
+                a, b = rng
                 f.seek(a)
                 body = f.read(b - a + 1)
                 return self._send(206, body, ctype, {"Content-Range": "bytes %d-%d/%d" % (a, b, size),

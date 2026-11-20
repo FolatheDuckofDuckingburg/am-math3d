@@ -139,11 +139,14 @@ def plate_from(mapdir, mover, src_mp4, frame, out_png):
     the source's size"""
     import av
     from PIL import Image, ImageFilter
+    src_im = None
     with av.open(src_mp4) as c:
         for k, x in enumerate(c.decode(video=0)):
             if k == frame:
                 src_im = x.to_image().convert("RGB")
                 break
+    if src_im is None:
+        raise ValueError("frame %s is outside the source video" % frame)
     size = src_im.size
     start = np.asarray(Image.open(os.path.join(mapdir, "puzzle_frame.png")).convert("RGB").resize(size, Image.LANCZOS)).astype(float)
     lab = np.round(np.asarray(Image.open(os.path.join(mapdir, "puzzle_labels.png"))) / 20.0).astype(int)
